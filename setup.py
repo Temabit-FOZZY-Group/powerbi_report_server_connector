@@ -8,9 +8,12 @@ plugins: Dict[str, Set[str]] = {
 
 setup_output = setup(
     name="powerbi_report_server",
-    version="1.0",
+    version="0.0.1",
     description="Ingest PowerBi Report Server metadata to DataHub",
     package_dir={"": "src"},
     packages=find_packages("src"),
     install_requires=list(plugins["powerbireportserver"]),
+    extras_require={
+        "dev": ["pytest"],
+    }
 )
