@@ -41,8 +41,8 @@ from pydantic.fields import Field
 from requests_ntlm import HttpNtlmAuth
 
 # Logger instance
-from source.constants import API_ENDPOINTS, Constant
-from source.domain import (
+from .constants import API_ENDPOINTS, Constant
+from .domain import (
     DataSet,
     DataSource,
     LinkedReport,
