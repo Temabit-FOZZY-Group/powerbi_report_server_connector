@@ -1,9 +1,19 @@
 # Introduction 
 Ingest PowerBi Report Server metadata to DataHub
 
+# Requirements
+DataHub use library orderedset to creating workunits, 
+for correct work of module you need:  
+   1. Python <=3.8
+   2. Microsoft Visual C++ 14.0
+
 # Getting Started
-To ingest data using this module you need: 
-1. Create recipe.yml:
+To ingest (.rdl), (.pbix) and mobile reports using this module you need:
+1. Install powerbi_report_server module:
+         
+         pip install git+https://github.com/Temabit-FOZZY-Group/powerbi_report_server_connector
+
+2. Create recipe.yml:
 
         source:
           type: powerbireportserver.report_server.PowerBiReportServerDashboardSource
@@ -32,6 +42,6 @@ To ingest data using this module you need:
 
 
 
-2. Run next command:
+3. Run next command:
    
          datahub ingest -c ./recipe.yml
