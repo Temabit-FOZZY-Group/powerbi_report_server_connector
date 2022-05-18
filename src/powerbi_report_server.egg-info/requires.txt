@@ -1,4 +1,0 @@
-pydantic
-requests
-requests_ntlm
-orderedset
