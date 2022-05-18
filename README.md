@@ -3,7 +3,7 @@ Ingest PowerBi Report Server metadata to DataHub
 
 # Getting Started
 To ingest data using this module you need: 
-1. Create recipe.yml:
+    1. Create recipe.yml:
     
     source:
       type: powerbireportserver.report_server.PowerBiReportServerDashboardSource
@@ -29,5 +29,5 @@ To ingest data using this module you need:
       config:
         server: "http://127.0.0.1:8080"
 
-2. Run next command:
-    datahub ingest -c ./recipe.yml
+    2. Run next command:
+        datahub ingest -c ./recipe.yml
