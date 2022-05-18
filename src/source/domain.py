@@ -163,7 +163,7 @@ class Report(CatalogItem):
     HasDataSources: bool
     HasSharedDataSets: bool
     HasParameters: bool
-    UserInfo: Optional[SystemPolicies]
+    UserInfo: Any
 
 
 class PowerBiReport(CatalogItem):

@@ -385,8 +385,6 @@ class PowerBiReportServerAPI:
         if self.__config.dataset_type_mapping.get(datasource.Type) is not None:
             # Now set the database detail as it is relational data source
             datasource.MetaData = MetaData(is_relational=True)
-            datasource.database = datasource_dict["connectionDetails"]["database"]
-            datasource.server = datasource_dict["connectionDetails"]["server"]
         else:
             datasource.MetaData = MetaData(is_relational=False)
 
