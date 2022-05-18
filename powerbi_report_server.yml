@@ -1,5 +1,5 @@
 source:
-  type: powerbi_report_server.src.powerbi_report_server.PowerBiReportServerDashboardSource
+  type: powerbi_report_server.PowerBiReportServerDashboardSource
   config:
     # Your Power BI Report Server Windows username
     username: vivo

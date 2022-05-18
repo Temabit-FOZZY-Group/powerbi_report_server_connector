@@ -5,9 +5,7 @@
 #########################################################
 import logging
 from dataclasses import dataclass, field as dataclass_field
-from datetime import datetime
-from enum import Enum
-from typing import Any, Callable, Dict, Iterable, List, Optional, Set
+from typing import Any, Dict, Iterable, List, Optional, Set
 
 import datahub.emitter.mce_builder as builder
 import requests
@@ -39,299 +37,23 @@ from datahub.metadata.schema_classes import (
     StatusClass,
 )
 from orderedset import OrderedSet
-from pydantic import BaseModel, validator
 from pydantic.fields import Field
 from requests_ntlm import HttpNtlmAuth
 
 # Logger instance
+from source.constants import API_ENDPOINTS, Constant
+from source.domain import (
+    DataSet,
+    DataSource,
+    LinkedReport,
+    MetaData,
+    MobileReport,
+    PowerBiReport,
+    Report,
+    SystemPolicies,
+)
+
 LOGGER = logging.getLogger(__name__)
-
-
-class CreatedFrom(Enum):
-    REPORT = "Report"
-    DATASET = "Dataset"
-    VISUALIZATION = "Visualization"
-    UNKNOWN = "UNKNOWN"
-
-
-class CatalogItem(BaseModel):
-    Id: str
-    Name: str
-    Description: Optional[str]
-    Path: str
-    Type: Any
-    Hidden: bool
-    Size: int
-    ModifiedBy: Optional[str]
-    ModifiedDate: Optional[datetime]
-    CreatedBy: Optional[str]
-    CreatedDate: Optional[datetime]
-    ParentFolderId: Optional[str]
-    ContentType: Optional[str]
-    Content: str
-    IsFavorite: bool
-
-    def get_urn_part(self):
-        return "reports.{}".format(self.Id)
-
-
-class DataSet(CatalogItem):
-    HasParameters: bool
-    QueryExecutionTimeOut: int
-
-    def get_urn_part(self):
-        return "datasets.{}".format(self.Id)
-
-    def __members(self):
-        return (self.Id,)
-
-    def __eq__(self, instance):
-        return (
-            isinstance(instance, DataSet) and self.__members() == instance.__members()
-        )
-
-    def __hash__(self):
-        return hash(self.__members())
-
-
-class DataModelDataSource(BaseModel):
-    AuthType: Optional[str]
-    SupportedAuthTypes: List[Optional[str]]
-    Kind: Optional[Callable]
-    ModelConnectionName: str
-    Secret: str
-    Type: Optional[str]
-    Username: str
-
-
-class CredentialsByUser(BaseModel):
-    DisplayText: str
-    UseAsWindowsCredentials: bool
-
-
-class CredentialsInServer(BaseModel):
-    UserName: str
-    Password: str
-    UseAsWindowsCredentials: bool
-    ImpersonateAuthenticatedUser: bool
-
-
-class ParameterValue(BaseModel):
-    Name: str
-    Value: str
-    IsValueFieldReference: str
-
-
-class ExtensionSettings(BaseModel):
-    Extension: str
-    ParameterValues: ParameterValue
-
-
-class Subscription(BaseModel):
-    Id: str
-    Owner: str
-    IsDataDriven: bool
-    Description: str
-    Report: str
-    IsActive: bool
-    EventType: str
-    ScheduleDescription: str
-    LastRunTime: datetime
-    LastStatus: str
-    ExtensionSettings: ExtensionSettings
-    DeliveryExtension: str
-    LocalizedDeliveryExtensionName: str
-    ModifiedBy: str
-    ModifiedDate: datetime
-    ParameterValues: ParameterValue
-
-
-class MetaData(BaseModel):
-    is_relational: bool
-
-
-class DataSource(CatalogItem):
-    IsEnabled: bool
-    DataModelDataSource: Optional[DataModelDataSource]
-    DataSourceSubType: Optional[str]
-    DataSourceType: Optional[str]
-    IsOriginalConnectionStringExpressionBased: bool
-    IsConnectionStringOverridden: bool
-    CredentialsByUser: Optional[CredentialsByUser]
-    CredentialsInServer: Optional[CredentialsInServer]
-    IsReference: bool
-    Subscriptions: Optional[Subscription]
-    MetaData: Optional[MetaData]
-
-    def __members(self):
-        return (self.Id,)
-
-    def __eq__(self, instance):
-        return (
-            isinstance(instance, DataSource)
-            and self.__members() == instance.__members()
-        )
-
-    def __hash__(self):
-        return hash(self.__members())
-
-
-class Comment(BaseModel):
-    Id: str
-    ItemId: str
-    UserName: str
-    ThreadId: str
-    AttachmentPath: str
-    Text: str
-    CreatedDate: datetime
-    ModifiedDate: datetime
-
-
-class ExcelWorkbook(CatalogItem):
-    Comments: Comment
-
-
-class Role(BaseModel):
-    Name: str
-    Description: str
-
-
-class SystemPolicies(BaseModel):
-    GroupUserName: str
-    Roles: List[Role]
-    DisplayName: Optional[str]
-
-    @validator("DisplayName", always=True)
-    def validate_diplay_name(cls, value, values):  # noqa: N805
-        return values["GroupUserName"].split("\\")[-1]
-
-    def get_urn_part(self):
-        return "users.{}".format(self.GroupUserName)
-
-
-class Report(CatalogItem):
-    HasDataSources: bool
-    HasSharedDataSets: bool
-    HasParameters: bool
-    UserInfo: Optional[SystemPolicies]
-
-
-class PowerBiReport(CatalogItem):
-    HasDataSources: bool
-
-
-class Extension(BaseModel):
-    ExtensionType: str
-    Name: str
-    LocalizedName: str
-    Visible: bool
-
-
-class Folder(CatalogItem):
-    """Folder"""
-
-
-class DrillThroughTarget(BaseModel):
-    DrillThroughTargetType: str
-
-
-class Value(BaseModel):
-    Value: str
-    Goal: int
-    Status: int
-    TrendSet: List[int]
-
-
-class Kpi(CatalogItem):
-    ValuerFormat: str
-    Visualization: str
-    DrillThroughTarget: DrillThroughTarget
-    Currency: str
-    Values: Value
-    Data: Dict[str, str]
-
-
-class LinkedReport(CatalogItem):
-    HasParemeters: bool
-    Link: str
-
-
-class Manifest(BaseModel):
-    Resorces: List[Dict[str, List]]
-
-
-class MobileReport(CatalogItem):
-    AllowCaching: bool
-    Manifest: Manifest
-
-
-class PowerBIReport(CatalogItem):
-    HasDataSources: bool
-
-
-class Resources(CatalogItem):
-    """Resources"""
-
-
-class System(BaseModel):
-    ReportServerAbsoluteUrl: str
-    ReportServerRelativeUrl: str
-    WebPortalRelativeUrl: str
-    ProductName: str
-    ProductVersion: str
-    ProductType: str
-    TimeZone: str
-
-
-class Constant:
-    """
-    keys used in powerbi plugin
-    """
-
-    DATASET = "DATASET"
-    REPORTS = "REPORTS"
-    REPORT = "REPORT"
-    DATASOURCE = "DATASOURCE"
-    DATASET_DATASOURCES = "DATASET_DATASOURCES"
-    DatasetId = "DatasetId"
-    ReportId = "ReportId"
-    PowerBiReportId = "ReportId"
-    Dataset_URN = "DatasetURN"
-    DASHBOARD_ID = "powerbi.linkedin.com/dashboards/{}"
-    DASHBOARD = "dashboard"
-    DATASETS = "DATASETS"
-    DATASET_ID = "powerbi.linkedin.com/datasets/{}"
-    DATASET_PROPERTIES = "datasetProperties"
-    SUBSCRIPTION = "SUBSCRIPTION"
-    SYSTEM = "SYSTEM"
-    CATALOG_ITEM = "CATALOG_ITEM"
-    EXCEL_WORKBOOK = "EXCEL_WORKBOOK"
-    EXTENSIONS = "EXTENSIONS"
-    FAVORITE_ITEM = "FAVORITE_ITEM"
-    FOLDERS = "FOLDERS"
-    KPIS = "KPIS"
-    LINKED_REPORTS = "LINKED_REPORTS"
-    LINKED_REPORT = "LINKED_REPORT"
-    ME = "ME"
-    MOBILE_REPORTS = "MOBILE_REPORTS"
-    MOBILE_REPORT = "MOBILE_REPORT"
-    POWERBI_REPORTS = "POWERBI_REPORTS"
-    POWERBI_REPORT = "POWERBI_REPORT"
-    RESOURCE = "RESOURCE"
-    SESSION = "SESSION"
-    SYSTEM_POLICIES = "SYSTEM_POLICIES"
-    DATASET_KEY = "datasetKey"
-    BROWSERPATH = "browsePaths"
-    DATAPLATFORM_INSTANCE = "dataPlatformInstance"
-    STATUS = "status"
-    VALUE = "value"
-    ID = "ID"
-    DASHBOARD_INFO = "dashboardInfo"
-    DASHBOARD_KEY = "dashboardKey"
-    CORP_USER = "corpuser"
-    CORP_USER_INFO = "corpUserInfo"
-    OWNERSHIP = "ownership"
-    CORP_USER_KEY = "corpUs erKey"
 
 
 class PowerBiReportServerAPIConfig(EnvBasedSourceConfigBase):
@@ -368,32 +90,6 @@ class PowerBiDashboardSourceConfig(PowerBiReportServerAPIConfig):
 
 class PowerBiReportServerAPI:
     # API endpoints of PowerBi Report Server to fetch reports, datasets
-    API_ENDPOINTS = {
-        Constant.CATALOG_ITEM: "{PBIRS_BASE_URL}/CatalogItems({CATALOG_ID})",
-        Constant.DATASETS: "{PBIRS_BASE_URL}/Datasets",
-        Constant.DATASET: "{PBIRS_BASE_URL}/Datasets({DATASET_ID})",
-        Constant.DATASET_DATASOURCES: "{PBIRS_BASE_URL}/Datasets({DATASET_ID})/DataSources",
-        Constant.DATASOURCE: "{PBIRS_BASE_URL}/DataSources({DATASOURCE_ID})",
-        Constant.EXCEL_WORKBOOK: "{PBIRS_BASE_URL}/ExcelWorkbooks({EXCEL_WORKBOOK_ID})",
-        Constant.EXTENSIONS: "{PBIRS_BASE_URL}/Extensions",
-        Constant.FAVORITE_ITEM: "{PBIRS_BASE_URL}/FavoriteItems({FAVORITE_ITEM_ID})",
-        Constant.FOLDERS: "{PBIRS_BASE_URL}/Folders({FOLDER_ID})",
-        Constant.KPIS: "{PBIRS_BASE_URL}/Kpis({KPI_ID})",
-        Constant.LINKED_REPORTS: "{PBIRS_BASE_URL}/LinkedReports",
-        Constant.LINKED_REPORT: "{PBIRS_BASE_URL}/LinkedReports({LINKED_REPORT_ID})",
-        Constant.ME: "{PBIRS_BASE_URLL}/Me",
-        Constant.MOBILE_REPORTS: "{PBIRS_BASE_URL}/MobileReports",
-        Constant.MOBILE_REPORT: "{PBIRS_BASE_URL}/MobileReports({MOBILE_REPORT_ID})",
-        Constant.POWERBI_REPORTS: "{PBIRS_BASE_URL}/PowerBiReports",
-        Constant.POWERBI_REPORT: "{PBIRS_BASE_URL}/PowerBiReports({POWERBI_REPORT_ID})",
-        Constant.REPORTS: "{PBIRS_BASE_URL}/Reports",
-        Constant.REPORT: "{PBIRS_BASE_URL}/Reports({REPORT_ID})",
-        Constant.RESOURCE: "{PBIRS_BASE_URL}/Resources({RESOURCE_GET})",
-        Constant.SESSION: "{PBIRS_BASE_URL}/Session",
-        Constant.SUBSCRIPTION: "{PBIRS_BASE_URL}/Subscriptions({SUBSCRIPTION_ID})",
-        Constant.SYSTEM: "{PBIRS_BASE_URL}/System",
-        Constant.SYSTEM_POLICIES: "{PBIRS_BASE_URL}/System/Policies",
-    }
 
     def __init__(self, config: PowerBiReportServerAPIConfig) -> None:
         self.__config: PowerBiReportServerAPIConfig = config
@@ -409,9 +105,7 @@ class PowerBiReportServerAPI:
         """
         Get user policy by Power Bi Report Server System
         """
-        user_list_endpoint: str = PowerBiReportServerAPI.API_ENDPOINTS[
-            Constant.SYSTEM_POLICIES
-        ]
+        user_list_endpoint: str = API_ENDPOINTS[Constant.SYSTEM_POLICIES]
         # Replace place holders
         user_list_endpoint = user_list_endpoint.format(
             PBIRS_BASE_URL=self.__config.get_base_api_url
@@ -454,7 +148,7 @@ class PowerBiReportServerAPI:
             LOGGER.info("{}={}".format(Constant.ReportId, report_id))
             return None
 
-        report_get_endpoint: str = PowerBiReportServerAPI.API_ENDPOINTS[Constant.REPORT]
+        report_get_endpoint: str = API_ENDPOINTS[Constant.REPORT]
         # Replace place holders
         report_get_endpoint = report_get_endpoint.format(
             PBIRS_BASE_URL=self.__config.get_base_api_url,
@@ -487,9 +181,7 @@ class PowerBiReportServerAPI:
             LOGGER.info("{}={}".format(Constant.ReportId, report_id))
             return None
 
-        powerbi_report_get_endpoint: str = PowerBiReportServerAPI.API_ENDPOINTS[
-            Constant.POWERBI_REPORT
-        ]
+        powerbi_report_get_endpoint: str = API_ENDPOINTS[Constant.POWERBI_REPORT]
         # Replace place holders
         powerbi_report_get_endpoint = powerbi_report_get_endpoint.format(
             PBIRS_BASE_URL=self.__config.get_base_api_url,
@@ -521,9 +213,7 @@ class PowerBiReportServerAPI:
             LOGGER.info("{}={}".format(Constant.ReportId, report_id))
             return None
 
-        linked_report_get_endpoint: str = PowerBiReportServerAPI.API_ENDPOINTS[
-            Constant.LINKED_REPORT
-        ]
+        linked_report_get_endpoint: str = API_ENDPOINTS[Constant.LINKED_REPORT]
         # Replace place holders
         linked_report_get_endpoint = linked_report_get_endpoint.format(
             PBIRS_BASE_URL=self.__config.get_base_api_url,
@@ -556,9 +246,7 @@ class PowerBiReportServerAPI:
             LOGGER.info("{}={}".format(Constant.ReportId, report_id))
             return None
 
-        mobile_report_get_endpoint: str = PowerBiReportServerAPI.API_ENDPOINTS[
-            Constant.MOBILE_REPORT
-        ]
+        mobile_report_get_endpoint: str = API_ENDPOINTS[Constant.MOBILE_REPORT]
         # Replace place holders
         mobile_report_get_endpoint = mobile_report_get_endpoint.format(
             PBIRS_BASE_URL=self.__config.get_base_api_url,
@@ -596,7 +284,7 @@ class PowerBiReportServerAPI:
         reports: List[Any] = []
         for report_type in report_types_mapping.keys():
 
-            report_get_endpoint: str = PowerBiReportServerAPI.API_ENDPOINTS[report_type]
+            report_get_endpoint: str = API_ENDPOINTS[report_type]
             # Replace place holders
             report_get_endpoint = report_get_endpoint.format(
                 PBIRS_BASE_URL=self.__config.get_base_api_url,
@@ -632,9 +320,7 @@ class PowerBiReportServerAPI:
             LOGGER.info("{}={}".format(Constant.DatasetId, dataset_id))
             return None
 
-        dataset_get_endpoint: str = PowerBiReportServerAPI.API_ENDPOINTS[
-            Constant.DATASET
-        ]
+        dataset_get_endpoint: str = API_ENDPOINTS[Constant.DATASET]
         # Replace place holders
         dataset_get_endpoint = dataset_get_endpoint.format(
             PBIRS_BASE_URL=self.__config.get_base_api_url,
@@ -663,9 +349,7 @@ class PowerBiReportServerAPI:
         Fetch the data source from PowerBi for the given dataset
         """
 
-        datasource_get_endpoint: str = PowerBiReportServerAPI.API_ENDPOINTS[
-            Constant.DATASET_DATASOURCES
-        ]
+        datasource_get_endpoint: str = API_ENDPOINTS[Constant.DATASET_DATASOURCES]
         # Replace place holders
         datasource_get_endpoint = datasource_get_endpoint.format(
             PBIRS_BASE_URL=self.__config.get_base_api_url,
