@@ -1,0 +1,10 @@
+README.md
+setup.cfg
+setup.py
+src/powerbi_report_server/__init__.py
+src/powerbi_report_server/powerbi_report_server.py
+src/powerbi_report_server.egg-info/PKG-INFO
+src/powerbi_report_server.egg-info/SOURCES.txt
+src/powerbi_report_server.egg-info/dependency_links.txt
+src/powerbi_report_server.egg-info/requires.txt
+src/powerbi_report_server.egg-info/top_level.txt
