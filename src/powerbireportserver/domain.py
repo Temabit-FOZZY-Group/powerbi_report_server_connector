@@ -20,6 +20,7 @@ class CatalogItem(BaseModel):
     ContentType: Optional[str]
     Content: str
     IsFavorite: bool
+    UserInfo: Any
 
     def get_urn_part(self):
         return "reports.{}".format(self.Id)
@@ -146,9 +147,8 @@ class Role(BaseModel):
     Description: str
 
 
-class SystemPolicies(BaseModel):
+class User(BaseModel):
     GroupUserName: str
-    Roles: List[Role]
     DisplayName: Optional[str]
 
     @validator("DisplayName", always=True)
@@ -159,11 +159,14 @@ class SystemPolicies(BaseModel):
         return "users.{}".format(self.GroupUserName)
 
 
+class SystemPolicies(User):
+    Roles: List[Role]
+
+
 class Report(CatalogItem):
     HasDataSources: bool
     HasSharedDataSets: bool
     HasParameters: bool
-    UserInfo: Any
 
 
 class PowerBiReport(CatalogItem):
