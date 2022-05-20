@@ -25,7 +25,7 @@ To ingest (.rdl), (.pbix) and mobile reports using this module you need:
             # Your Workstation name
             workstation_name: workstation_name
             # Your server domain name
-            domain_name:
+            domain_name: domain_name
             # Workspace's dataset environments (PROD, DEV, QA, STAGE)
             env: DEV
             # Your Power BI Report Server base virtual directory name for reports
