@@ -50,7 +50,8 @@ from .domain import (
     MobileReport,
     PowerBiReport,
     Report,
-    SystemPolicies, User,
+    SystemPolicies,
+    User,
 )
 
 LOGGER = logging.getLogger(__name__)
@@ -60,6 +61,7 @@ class PowerBiReportServerAPIConfig(EnvBasedSourceConfigBase):
     username: str = Field(description="Windows account username")
     password: str = Field(description="Windows account password")
     workstation_name: str = Field(default="localhost", description="Workstation name")
+    domain_name: str = Field(description="Server domain name")
     report_virtual_directory_name: str = Field(
         description="Report Virtual Directory URL name"
     )
@@ -77,7 +79,7 @@ class PowerBiReportServerAPIConfig(EnvBasedSourceConfigBase):
     @property
     def get_base_api_url(self):
         return "http://{}/{}/api/v2.0/".format(
-            self.workstation_name, self.report_virtual_directory_name
+            self.domain_name, self.report_virtual_directory_name
         )
 
 
@@ -301,6 +303,7 @@ class PowerBiReportServerAPI:
                 message: str = "Failed to fetch report from power-bi-report-server for"
                 LOGGER.warning(message)
                 LOGGER.warning("{}={}".format(Constant.ReportId, report_type))
+                raise ValueError(message)
 
             response_dict = response.json()["value"]
             if response_dict:
@@ -559,7 +562,6 @@ class Mapper:
         """
         Map PowerBi ReportServer user to datahub user
         """
-
         LOGGER.info("Converting user {} to datahub's user".format(user.GroupUserName))
 
         # Create an URN for user
@@ -690,20 +692,16 @@ class PowerBiReportServerDashboardSource(Source):
 
         for report in reports:
             try:
-                # Fetch PowerBi Report Server users for dashboards
-                if user_info := self.powerbi_client.get_user_policies(report.CreatedBy):
-                    report.UserInfo = user_info
-                else:
-                    report.UserInfo = User(GroupUserName=report.CreatedBy)
+                report.UserInfo = User(GroupUserName=report.CreatedBy)
                 # Increase dashboard and tiles count in report
                 self.report.report_scanned(count=1)
+
             except Exception as e:
-                message = "Error ({}) occurred while loading dashboard {}(id={}) tiles.".format(
+                message = "Error ({}) occurred while loading user {}(id={})".format(
                     e, report.Name, report.Id
                 )
                 LOGGER.exception(message, e)
                 self.report.report_warning(report.Id, message)
-            print(f"TEST {report}")
             # Convert PowerBi Report Server Dashboard and child entities
             # to Datahub work unit to ingest into Datahub
             workunits = self.mapper.to_datahub_work_units(report)
