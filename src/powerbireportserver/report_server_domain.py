@@ -33,6 +33,8 @@ class CatalogItem(BaseModel):
     def get_web_url(self, base_reports_url: str):
         return "{}powerbi{}".format(base_reports_url, self.Path)
 
+    def get_browse_path(self, base_folder: str, workspace: str):
+        return "/{}/{}{}".format(base_folder, workspace, self.Path)
 
 class DataSet(CatalogItem):
     HasParameters: bool

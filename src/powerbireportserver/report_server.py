@@ -609,7 +609,7 @@ class Mapper:
 
         # Dashboard browsePaths
         browse_path = BrowsePathsClass(
-            paths=["/powerbi_report_server/{}".format(self.__config.domain_name)]
+            paths=[report.get_browse_path("powerbi_report_server", self.__config.domain_name)]
         )
         browse_path_mcp = self.new_mcp(
             entity_type=Constant.DASHBOARD,

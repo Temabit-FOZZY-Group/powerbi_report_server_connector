@@ -1,5 +1,24 @@
 # Introduction 
 Ingest PowerBi Report Server metadata to DataHub
+Allows to ingest report metadata to DataHub.
+
+Metadata that can be ingested:
+   - report name
+   - report description
+   - ownership(can add existing users in DataHub as owners)
+   - transfer folders structure to DataHub as it is in Report Server
+   - webUrl to report in Report Server
+
+Due to limits of PBIRS REST API, it's impossible to ingest next data for now:
+   - tiles info
+   - datasource of report
+   - dataset of report
+
+Next types of report can be ingested:
+   - PowerBI report(.pbix)
+   - Paginated report(.rdl)
+   - Mobile report
+   - Linked report
 
 # Requirements
 DataHub use library orderedset to creating workunits, 
