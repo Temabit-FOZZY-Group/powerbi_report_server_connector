@@ -28,6 +28,8 @@ To ingest (.rdl), (.pbix) and mobile reports using this module you need:
             domain_name: domain_name
             # Workspace's dataset environments (PROD, DEV, QA, STAGE)
             env: DEV
+            # Workspace's dataset environments (PROD, DEV, QA, STAGE)
+            graphql_url: http://localhost:8080/api/graphql
             # Your Power BI Report Server base virtual directory name for reports
             report_virtual_directory_name: Reports
             #  Your Power BI Report Server base virtual directory name for report server

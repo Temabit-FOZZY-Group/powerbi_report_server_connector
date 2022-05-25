@@ -8,6 +8,11 @@ class CreatedFrom(Enum):
     UNKNOWN = "UNKNOWN"
 
 
+class RelationshipDirection(Enum):
+    INCOMING = "INCOMING"
+    OUTGOING = "OUTGOING"
+
+
 class Constant:
     """
     keys used in powerbi plugin
@@ -56,7 +61,7 @@ class Constant:
     CORP_USER = "corpuser"
     CORP_USER_INFO = "corpUserInfo"
     OWNERSHIP = "ownership"
-    CORP_USER_KEY = "corpUs erKey"
+    CORP_USER_KEY = "corpUserKey"
 
 
 API_ENDPOINTS = {

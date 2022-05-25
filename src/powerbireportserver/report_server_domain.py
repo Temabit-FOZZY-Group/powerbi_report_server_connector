@@ -21,9 +21,17 @@ class CatalogItem(BaseModel):
     Content: str
     IsFavorite: bool
     UserInfo: Any
+    DisplayName: Optional[str]
+
+    @validator("DisplayName", always=True)
+    def validate_diplay_name(cls, value, values):  # noqa: N805
+        return values["CreatedBy"].split("\\")[-1]
 
     def get_urn_part(self):
         return "reports.{}".format(self.Id)
+
+    def get_web_url(self, base_reports_url: str):
+        return "{}powerbi{}".format(base_reports_url, self.Path)
 
 
 class DataSet(CatalogItem):
@@ -146,20 +154,8 @@ class Role(BaseModel):
     Name: str
     Description: str
 
-
-class User(BaseModel):
+class SystemPolicies(BaseModel):
     GroupUserName: str
-    DisplayName: Optional[str]
-
-    @validator("DisplayName", always=True)
-    def validate_diplay_name(cls, value, values):  # noqa: N805
-        return values["GroupUserName"].split("\\")[-1]
-
-    def get_urn_part(self):
-        return "users.{}".format(self.GroupUserName)
-
-
-class SystemPolicies(User):
     Roles: List[Role]
 
 

@@ -5,7 +5,7 @@
 #########################################################
 import logging
 from dataclasses import dataclass, field as dataclass_field
-from typing import Any, Dict, Iterable, List, Optional, Set, Union
+from typing import Any, Dict, Iterable, List, Optional, Set
 
 import datahub.emitter.mce_builder as builder
 import requests
@@ -37,12 +37,14 @@ from datahub.metadata.schema_classes import (
     StatusClass,
 )
 from orderedset import OrderedSet
+from pydantic import ValidationError
 from pydantic.fields import Field
 from requests_ntlm import HttpNtlmAuth
 
 # Logger instance
 from .constants import API_ENDPOINTS, Constant
-from .domain import (
+from .graphql_domain import CorpUser
+from .report_server_domain import (
     DataSet,
     DataSource,
     LinkedReport,
@@ -51,7 +53,6 @@ from .domain import (
     PowerBiReport,
     Report,
     SystemPolicies,
-    User,
 )
 
 LOGGER = logging.getLogger(__name__)
@@ -62,6 +63,7 @@ class PowerBiReportServerAPIConfig(EnvBasedSourceConfigBase):
     password: str = Field(description="Windows account password")
     workstation_name: str = Field(default="localhost", description="Workstation name")
     domain_name: str = Field(description="Server domain name")
+    graphql_url: str = Field(description="GraphQL API URL")
     report_virtual_directory_name: str = Field(
         description="Report Virtual Directory URL name"
     )
@@ -82,9 +84,15 @@ class PowerBiReportServerAPIConfig(EnvBasedSourceConfigBase):
             self.domain_name, self.report_virtual_directory_name
         )
 
+    @property
+    def get_base_url(self):
+        return "http://{}/{}/".format(
+            self.domain_name, self.report_virtual_directory_name
+        )
 
-class PowerBiDashboardSourceConfig(PowerBiReportServerAPIConfig):
-    platform_name: str = "powerbireportserver"
+
+class PowerBiReportServerDashboardSourceConfig(PowerBiReportServerAPIConfig):
+    platform_name: str = "powerbi"
     platform_urn: str = builder.make_data_platform_urn(platform=platform_name)
     report_pattern: AllowDenyPattern = AllowDenyPattern.allow_all()
     chart_pattern: AllowDenyPattern = AllowDenyPattern.allow_all()
@@ -394,6 +402,68 @@ class PowerBiReportServerAPI:
         return datasource
 
 
+class UserDao:
+    def __init__(self, config: PowerBiReportServerDashboardSourceConfig):
+        self.__config = config
+
+    def _run_query(self, query) -> Dict[str, Any]:
+        request = requests.post(url=self.__config.graphql_url, json={"query": query})
+        if request.status_code == 200:
+            return request.json()
+        else:
+            raise Exception(
+                "Query failed to run by returning code of {}. {}".format(
+                    request.status_code, query
+                )
+            )
+
+    def _get_owner_by_name(self, user_name: str) -> Dict[str, Any]:
+        get_owner = f"""{{
+        search(input: {{ type: CORP_USER, query: "{user_name}"}}){{
+            searchResults{{
+                entity{{
+                     urn
+                     type
+                     ...on CorpUser {{
+                        username
+                        urn
+                        type
+                        properties {{
+                            active
+                            displayName
+                            email
+                            title
+                        }}
+                    }}
+                }}
+              matchedFields {{
+                name
+                value
+                }}
+            }}
+        }}
+    }}
+    """
+
+        result = self._run_query(get_owner)
+        return result
+
+    @staticmethod
+    def _filter_values(response: Dict[str, Any], mask: str) -> Optional[Dict[str, Any]]:
+        users = response["data"]["search"]["searchResults"]
+        for user in users:
+            if user["matchedFields"][0]["value"] == mask:
+                return user["entity"]
+        return None
+
+    def get_owner_by_name(self, user_name: str) -> Optional[CorpUser]:
+        response = self._get_owner_by_name(user_name=user_name)
+        filtered_response = self._filter_values(response=response, mask=user_name)
+        if filtered_response:
+            return CorpUser.parse_obj(filtered_response)
+        return None
+
+
 class Mapper:
     """
     Transfrom PowerBi Report Server concept Report to DataHub concept Dashboard
@@ -411,7 +481,7 @@ class Mapper:
         def __hash__(self):
             return id(self.id)
 
-    def __init__(self, config: PowerBiDashboardSourceConfig):
+    def __init__(self, config: PowerBiReportServerDashboardSourceConfig):
         self.__config = config
 
     @staticmethod
@@ -478,18 +548,18 @@ class Mapper:
             _report: Report,
         ) -> dict:
             return {
-                "chartCount": 0,  # str(len(dashboard.tiles)), couldn't count charts
-                "workspaceName": "",
-                "workspaceId": _report.Id,
+                "chartCount": str(0),
+                "workspaceName": "PowerBI Report Server",
+                "workspaceId": self.__config.domain_name,
             }
 
         # DashboardInfo mcp
         dashboard_info_cls = DashboardInfoClass(
-            description=report.Name or "",
+            description=report.Description or "",
             title=report.Name or "",
             charts=chart_urn_list,
             lastModified=ChangeAuditStamps(),
-            dashboardUrl=report.Path,  # should be werbUrl
+            dashboardUrl=report.get_web_url(self.__config.get_base_url),
             customProperties={**chart_custom_properties(report)},
         )
 
@@ -524,7 +594,7 @@ class Mapper:
 
         # Dashboard Ownership
         owners = [
-            OwnerClass(owner=user_urn, type=OwnershipTypeClass.CONSUMER)
+            OwnerClass(owner=user_urn, type=OwnershipTypeClass.BUSINESS_OWNER)
             for user_urn in user_urn_list
             if user_urn is not None
         ]
@@ -539,7 +609,7 @@ class Mapper:
 
         # Dashboard browsePaths
         browse_path = BrowsePathsClass(
-            paths=["/powerbi_report_server/{}".format(self.__config.platform_name)]
+            paths=["/powerbi_report_server/{}".format(self.__config.domain_name)]
         )
         browse_path_mcp = self.new_mcp(
             entity_type=Constant.DASHBOARD,
@@ -556,21 +626,19 @@ class Mapper:
             owner_mcp,
         ]
 
-    def to_datahub_user(
-        self, user: Union[SystemPolicies, User]
-    ) -> List[MetadataChangeProposalWrapper]:
+    def to_datahub_user(self, user: CorpUser) -> List[MetadataChangeProposalWrapper]:
         """
         Map PowerBi ReportServer user to datahub user
         """
-        LOGGER.info("Converting user {} to datahub's user".format(user.GroupUserName))
+        LOGGER.info("Converting user {} to datahub's user".format(user.username))
 
         # Create an URN for user
         user_urn = builder.make_user_urn(user.get_urn_part())
 
         user_info_instance = CorpUserInfoClass(
-            displayName=user.DisplayName,
-            email=None,  # user.emailAddress
-            title=user.DisplayName,
+            displayName=user.properties.displayName,
+            email=user.properties.email,
+            title=user.properties.title,
             active=True,
         )
 
@@ -589,9 +657,7 @@ class Mapper:
             aspect=StatusClass(removed=False),
         )
 
-        user_key = CorpUserKeyClass(
-            username=user.GroupUserName
-        )  # should be user id here
+        user_key = CorpUserKeyClass(username=user.username)
 
         user_key_mcp = self.new_mcp(
             entity_type=Constant.CORP_USER,
@@ -640,7 +706,7 @@ class PowerBiReportServerDashboardSourceReport(SourceReport):
 
 
 @platform_name("PowerBIReportServer")
-@config_class(PowerBiDashboardSourceConfig)
+@config_class(PowerBiReportServerDashboardSourceConfig)
 @support_status(SupportStatus.UNKNOWN)
 @capability(SourceCapability.OWNERSHIP, "Enabled by default")
 class PowerBiReportServerDashboardSource(Source):
@@ -663,21 +729,24 @@ class PowerBiReportServerDashboardSource(Source):
         - Enhance admin APIs responses with detailed metadata
     """
 
-    source_config: PowerBiDashboardSourceConfig
+    source_config: PowerBiReportServerDashboardSourceConfig
     report: PowerBiReportServerDashboardSourceReport
     accessed_dashboards: int = 0
 
-    def __init__(self, config: PowerBiDashboardSourceConfig, ctx: PipelineContext):
+    def __init__(
+        self, config: PowerBiReportServerDashboardSourceConfig, ctx: PipelineContext
+    ):
         super().__init__(ctx)
         self.source_config = config
         self.report = PowerBiReportServerDashboardSourceReport()
         self.auth = PowerBiReportServerAPI(self.source_config).get_auth_credentials()
         self.powerbi_client = PowerBiReportServerAPI(self.source_config)
         self.mapper = Mapper(config)
+        self.user_dao = UserDao(config)
 
     @classmethod
     def create(cls, config_dict, ctx):
-        config = PowerBiDashboardSourceConfig.parse_obj(config_dict)
+        config = PowerBiReportServerDashboardSourceConfig.parse_obj(config_dict)
         return cls(config, ctx)
 
     def get_workunits(self) -> Iterable[MetadataWorkUnit]:
@@ -692,16 +761,26 @@ class PowerBiReportServerDashboardSource(Source):
 
         for report in reports:
             try:
-                report.UserInfo = User(GroupUserName=report.CreatedBy)
-                # Increase dashboard and tiles count in report
-                self.report.report_scanned(count=1)
+                report.UserInfo = self.user_dao.get_owner_by_name(user_name=report.DisplayName)
 
-            except Exception as e:
+            except ValidationError as e:
                 message = "Error ({}) occurred while loading user {}(id={})".format(
                     e, report.Name, report.Id
                 )
                 LOGGER.exception(message, e)
                 self.report.report_warning(report.Id, message)
+                user_data = dict(
+                    urn=f"urn:li:corpuser:{report.DisplayName}",
+                    type=Constant.CORP_USER,
+                    username=report.DisplayName,
+                    properties=dict(
+                        active=True, displayName=report.DisplayName, email=""
+                    ),
+                )
+                report.UserInfo = CorpUser.parse_obj(user_data)
+            finally:
+                # Increase dashboard and tiles count in report
+                self.report.report_scanned(count=1)
             # Convert PowerBi Report Server Dashboard and child entities
             # to Datahub work unit to ingest into Datahub
             workunits = self.mapper.to_datahub_work_units(report)
