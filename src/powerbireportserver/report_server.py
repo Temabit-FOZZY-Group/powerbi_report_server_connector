@@ -609,7 +609,11 @@ class Mapper:
 
         # Dashboard browsePaths
         browse_path = BrowsePathsClass(
-            paths=[report.get_browse_path("powerbi_report_server", self.__config.domain_name)]
+            paths=[
+                report.get_browse_path(
+                    "powerbi_report_server", self.__config.domain_name
+                )
+            ]
         )
         browse_path_mcp = self.new_mcp(
             entity_type=Constant.DASHBOARD,
@@ -761,7 +765,9 @@ class PowerBiReportServerDashboardSource(Source):
 
         for report in reports:
             try:
-                report.UserInfo = self.user_dao.get_owner_by_name(user_name=report.DisplayName)
+                report.UserInfo = self.user_dao.get_owner_by_name(
+                    user_name=report.DisplayName
+                )
 
             except ValidationError as e:
                 message = "Error ({}) occurred while loading user {}(id={})".format(

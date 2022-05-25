@@ -36,6 +36,7 @@ class CatalogItem(BaseModel):
     def get_browse_path(self, base_folder: str, workspace: str):
         return "/{}/{}{}".format(base_folder, workspace, self.Path)
 
+
 class DataSet(CatalogItem):
     HasParameters: bool
     QueryExecutionTimeOut: int
@@ -155,6 +156,7 @@ class ExcelWorkbook(CatalogItem):
 class Role(BaseModel):
     Name: str
     Description: str
+
 
 class SystemPolicies(BaseModel):
     GroupUserName: str
