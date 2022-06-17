@@ -5,7 +5,7 @@
 #########################################################
 import logging
 from dataclasses import dataclass, field as dataclass_field
-from typing import Any, Dict, Iterable, List, Optional, Set
+from typing import Any, Dict, Iterable, List, Optional, Set, Union
 
 import datahub.emitter.mce_builder as builder
 import requests
@@ -71,7 +71,7 @@ class PowerBiReportServerAPIConfig(EnvBasedSourceConfigBase):
         description="Report Server Virtual Directory URL name"
     )
     dataset_type_mapping: Dict[str, str] = Field(
-        description="Mapping of Power BI datasource type to Datahub dataset."
+        description="Mapping of Power BI DataSource type to Datahub DataSet."
     )
     scan_timeout: int = Field(
         default=60,
@@ -113,7 +113,7 @@ class PowerBiReportServerAPI:
 
     def get_users_policies(self) -> List[SystemPolicies]:
         """
-        Get user policy by Power Bi Report Server System
+        Get User policy by Power Bi Report Server System
         """
         user_list_endpoint: str = API_ENDPOINTS[Constant.SYSTEM_POLICIES]
         # Replace place holders
@@ -129,11 +129,11 @@ class PowerBiReportServerAPI:
         # Check if we got response from PowerBi Report Server
         if response.status_code != 200:
             LOGGER.warning(
-                "Failed to fetch user list from power-bi for, http_status={}, message={}".format(
+                "Failed to fetch User list from power-bi for, http_status={}, message={}".format(
                     response.status_code, response.text
                 )
             )
-            raise ConnectionError("Failed to fetch the user list from the power-bi")
+            raise ConnectionError("Failed to fetch the User list from the power-bi")
 
         users_dict: List[Any] = response.json()[Constant.VALUE]
         # Iterate through response and create a list of PowerBiReportServerAPI.Dashboard
@@ -151,7 +151,7 @@ class PowerBiReportServerAPI:
 
     def get_report(self, report_id: str) -> Optional[Report]:
         """
-        Fetch the .rdl report from PowerBiReportServer for the given report id
+        Fetch the .rdl Report from PowerBiReportServer for the given Report Id
         """
         if report_id is None:
             LOGGER.info("Input value is None")
@@ -165,7 +165,7 @@ class PowerBiReportServerAPI:
             REPORT_ID=report_id,
         )
         # Hit PowerBiReportServer
-        LOGGER.info("Request to report URL={}".format(report_get_endpoint))
+        LOGGER.info("Request to Report URL={}".format(report_get_endpoint))
         response = requests.get(
             url=report_get_endpoint,
             auth=self.get_auth_credentials(),
@@ -173,7 +173,7 @@ class PowerBiReportServerAPI:
 
         # Check if we got response from PowerBi Report Server
         if response.status_code != 200:
-            message: str = "Failed to fetch report from power-bi-report-server for"
+            message: str = "Failed to fetch Report from power-bi-report-server for"
             LOGGER.warning(message)
             LOGGER.warning("{}={}".format(Constant.ReportId, report_id))
             raise ConnectionError(message)
@@ -184,7 +184,7 @@ class PowerBiReportServerAPI:
 
     def get_powerbi_report(self, report_id: str) -> Optional[PowerBiReport]:
         """
-        Fetch the .pbix report from PowerBiReportServer for the given report id
+        Fetch the .pbix Report from PowerBiReportServer for the given Report Id
         """
         if report_id is None:
             LOGGER.info("Input value is None")
@@ -198,7 +198,7 @@ class PowerBiReportServerAPI:
             POWERBI_REPORT_ID=report_id,
         )
         # Hit PowerBiReportServer
-        LOGGER.info("Request to report URL={}".format(powerbi_report_get_endpoint))
+        LOGGER.info("Request to Report URL={}".format(powerbi_report_get_endpoint))
         response = requests.get(
             url=powerbi_report_get_endpoint,
             auth=self.get_auth_credentials(),
@@ -206,7 +206,7 @@ class PowerBiReportServerAPI:
 
         # Check if we got response from PowerBi Report Server
         if response.status_code != 200:
-            message: str = "Failed to fetch report from power-bi-report-server for"
+            message: str = "Failed to fetch Report from power-bi-report-server for"
             LOGGER.warning(message)
             LOGGER.warning("{}={}".format(Constant.ReportId, report_id))
             raise ConnectionError(message)
@@ -216,7 +216,7 @@ class PowerBiReportServerAPI:
 
     def get_linked_report(self, report_id: str) -> Optional[LinkedReport]:
         """
-        Fetch the mobile report from PowerBiReportServer for the given report id
+        Fetch the Mobile Report from PowerBiReportServer for the given Report Id
         """
         if report_id is None:
             LOGGER.info("Input value is None")
@@ -230,7 +230,7 @@ class PowerBiReportServerAPI:
             LINKED_REPORT_ID=report_id,
         )
         # Hit PowerBiReportServer
-        LOGGER.info("Request to report URL={}".format(linked_report_get_endpoint))
+        LOGGER.info("Request to Report URL={}".format(linked_report_get_endpoint))
         response = requests.get(
             url=linked_report_get_endpoint,
             auth=self.get_auth_credentials(),
@@ -238,7 +238,7 @@ class PowerBiReportServerAPI:
 
         # Check if we got response from PowerBi Report Server
         if response.status_code != 200:
-            message: str = "Failed to fetch report from power-bi-report-server for"
+            message: str = "Failed to fetch Report from power-bi-report-server for"
             LOGGER.warning(message)
             LOGGER.warning("{}={}".format(Constant.ReportId, report_id))
             raise ConnectionError(message)
@@ -249,7 +249,7 @@ class PowerBiReportServerAPI:
 
     def get_mobile_report(self, report_id: str) -> Optional[MobileReport]:
         """
-        Fetch the mobile report from PowerBiReportServer for the given report id
+        Fetch the Mobile Report from PowerBiReportServer for the given Report Id
         """
         if report_id is None:
             LOGGER.info("Input value is None")
@@ -263,7 +263,7 @@ class PowerBiReportServerAPI:
             MOBILE_REPORT_ID=report_id,
         )
         # Hit PowerBi ReportServer
-        LOGGER.info("Request to report URL={}".format(mobile_report_get_endpoint))
+        LOGGER.info("Request to Report URL={}".format(mobile_report_get_endpoint))
         response = requests.get(
             url=mobile_report_get_endpoint,
             auth=self.get_auth_credentials(),
@@ -271,7 +271,7 @@ class PowerBiReportServerAPI:
 
         # Check if we got response from PowerBi Report Server
         if response.status_code != 200:
-            message: str = "Failed to fetch report from power-bi-report-server for"
+            message: str = "Failed to fetch Report from power-bi-report-server for"
             LOGGER.warning(message)
             LOGGER.warning("{}={}".format(Constant.ReportId, report_id))
             raise ConnectionError(message)
@@ -282,7 +282,7 @@ class PowerBiReportServerAPI:
 
     def get_all_reports(self) -> List[Any]:
         """
-        Fetch all reports from PowerBiReportServer
+        Fetch all Reports from PowerBiReportServer
         """
         report_types_mapping: Dict[str, Any] = {
             Constant.REPORTS: Report,
@@ -300,7 +300,7 @@ class PowerBiReportServerAPI:
                 PBIRS_BASE_URL=self.__config.get_base_api_url,
             )
             # Hit PowerBi ReportServer
-            LOGGER.info("Request to report URL={}".format(report_get_endpoint))
+            LOGGER.info("Request to Report URL={}".format(report_get_endpoint))
             response = requests.get(
                 url=report_get_endpoint,
                 auth=self.get_auth_credentials(),
@@ -308,7 +308,7 @@ class PowerBiReportServerAPI:
 
             # Check if we got response from PowerBi Report Server
             if response.status_code != 200:
-                message: str = "Failed to fetch report from power-bi-report-server for"
+                message: str = "Failed to fetch Report from power-bi-report-server for"
                 LOGGER.warning(message)
                 LOGGER.warning("{}={}".format(Constant.ReportId, report_type))
                 raise ValueError(message)
@@ -324,7 +324,7 @@ class PowerBiReportServerAPI:
 
     def get_dataset(self, dataset_id: str) -> Any:
         """
-        Fetch the dataset from PowerBi Report Server for the given dataset identifier
+        Fetch the DataSet from PowerBi Report Server for the given DataSet identifier
         """
         if dataset_id is None:
             LOGGER.info("Input value is None")
@@ -338,13 +338,13 @@ class PowerBiReportServerAPI:
             DATASET_ID=dataset_id,
         )
         # Hit PowerBi ReportServer
-        LOGGER.info("Request to dataset URL={}".format(dataset_get_endpoint))
+        LOGGER.info("Request to DataSet URL={}".format(dataset_get_endpoint))
         response = requests.get(
             url=dataset_get_endpoint, auth=self.get_auth_credentials()
         )
         # Check if we got response from PowerBi Report Server
         if response.status_code != 200:
-            message: str = "Failed to fetch dataset from power-bi-report-server for"
+            message: str = "Failed to fetch DataSet from power-bi-report-server for"
             LOGGER.warning(message)
             LOGGER.warning("{}={}".format(Constant.DatasetId, dataset_id))
             raise ConnectionError(message)
@@ -355,7 +355,7 @@ class PowerBiReportServerAPI:
         # in-case if it is None then setting complete webURL to None instead of None/details
         return DataSet.parse_obj(response_dict)
 
-    def get_data_source(self, dataset: DataSet) -> Any:
+    def get_data_source(self, datasource_id: str) -> Any:
         """
         Fetch the data source from PowerBi for the given dataset
         """
@@ -364,27 +364,25 @@ class PowerBiReportServerAPI:
         # Replace place holders
         datasource_get_endpoint = datasource_get_endpoint.format(
             PBIRS_BASE_URL=self.__config.get_base_api_url,
-            DATASET_ID=dataset.Id,
+            DATASET_ID=datasource_id,
         )
         # Hit PowerBi Report Server
-        LOGGER.info("Request to datasource URL={}".format(datasource_get_endpoint))
+        LOGGER.info("Request to DataSource URL={}".format(datasource_get_endpoint))
         response = requests.get(
             url=datasource_get_endpoint, auth=self.get_auth_credentials()
         )
         # Check if we got response from PowerBi Report Server
         if response.status_code != 200:
-            message: str = "Failed to fetch datasource from power-bi-report-server for"
+            message: str = "Failed to fetch DataSource from power-bi-report-server for"
             LOGGER.warning(message)
-            LOGGER.warning("{}={}".format(Constant.DatasetId, dataset.Id))
+            LOGGER.warning("{}={}".format(Constant.DatasetId, datasource_id))
             raise ConnectionError(message)
 
         res = response.json()
         value = res["value"]
         if len(value) == 0:
             LOGGER.info(
-                "datasource is not found for dataset {}({})".format(
-                    dataset.Name, dataset.Id
-                )
+                "DataSource is not found for DataSource id {}".format(datasource_id)
             )
             return None
         # Consider only zero index datasource
@@ -401,6 +399,61 @@ class PowerBiReportServerAPI:
 
         return datasource
 
+
+    def get_report_data_sources(self, report: Union[Report, PowerBiReport]) -> List[DataSource]:
+        """
+        Fetch the data source from PowerBi for the given dataset
+        """
+        report_types_mapping: Dict[str, Any] = {
+            Constant.TYPE_REPORT: API_ENDPOINTS[Constant.REPORT_DATASOURCES],
+            Constant.TYPE_POWERBI_REPORT: API_ENDPOINTS[Constant.POWERBI_REPORT_DATASOURCES],
+        }
+        data_sources = []
+        # datasource_get_endpoint: str = API_ENDPOINTS[Constant.DATASET_DATASOURCES]
+        # Replace place holders
+        datasource_get_endpoint = report_types_mapping[report.Type].format(
+            PBIRS_BASE_URL=self.__config.get_base_api_url,
+            ID=report.Id,
+        )
+        # Hit PowerBi Report Server
+        LOGGER.info("Request to DataSources URL={}".format(datasource_get_endpoint))
+        response = requests.get(
+            url=datasource_get_endpoint, auth=self.get_auth_credentials()
+        )
+        # Check if we got response from PowerBi Report Server
+        if response.status_code != 200:
+            message: str = "Failed to fetch DataSource from power-bi-report-server for"
+            LOGGER.warning(message)
+            LOGGER.warning("{}={}".format(Constant.DatasetId, report.Id))
+            raise ConnectionError(message)
+
+        res = response.json()
+        values = res["value"]
+        if len(values) == 0:
+            LOGGER.info(
+                "No DataSources found for Report {}({})".format(
+                    report.Name, report.Id
+                )
+            )
+            return data_sources
+        # Consider only zero index datasource
+        if values:
+            for value in values:
+                data_source = DataSource.parse_obj(value)
+                if self.__config.dataset_type_mapping.get(data_source.DataSourceType) is not None:
+                    # Now set the database detail as it is relational data source
+                    data_source.MetaData = MetaData(is_relational=True)
+                else:
+                    data_source.MetaData = MetaData(is_relational=False)
+                data_sources.append(data_source)
+            # datasource_dict = value[0]
+            # Create datasource instance with basic detail available
+            # datasource = DataSource.parse_obj(datasource_dict)
+
+            # Check if datasource is relational as per our relation mapping
+
+            return data_sources
+        return data_sources
 
 class UserDao:
     def __init__(self, config: PowerBiReportServerDashboardSourceConfig):
@@ -461,7 +514,16 @@ class UserDao:
         filtered_response = self._filter_values(response=response, mask=user_name)
         if filtered_response:
             return CorpUser.parse_obj(filtered_response)
-        return None
+
+        user_data = dict(
+            urn=f"urn:li:corpuser:{user_name}",
+            type=Constant.CORP_USER,
+            username=user_name,
+            properties=dict(
+                active=True, displayName=user_name, email=""
+            ),
+        )
+        return CorpUser.parse_obj(user_data)
 
 
 class Mapper:
@@ -527,6 +589,70 @@ class Mapper:
             )
         )
 
+    def __to_datahub_dataset(
+            self, report: Optional[Report]
+    ) -> List[MetadataChangeProposalWrapper]:
+        """
+        Map PowerBi Report Server report DataSources to datahub dataset.
+        Here we are mapping each table of PowerBi Report Server DataSource to Datahub dataset.
+        """
+
+        dataset_mcps: List[MetadataChangeProposalWrapper] = []
+        if not report.HasDataSources:
+            return dataset_mcps
+
+        # We are only suporting relation PowerBi Report Server DataSources
+        if (
+                not report.DataSources
+                or report.DataSources.MetaData.is_relational is False
+        ):
+            LOGGER.warning(
+                "Report {}({}) has not relational DataSource".format(
+                    report.Name, report.Id
+                )
+            )
+            return dataset_mcps
+
+        LOGGER.info(
+            "Converting Report DataSource, Report={}(id={}) to DataHub DataSet".format(
+                report.Name, report.Id
+            )
+        )
+
+        for datasource in report.DataSources:
+            # Create an URN for dataset
+
+            ds_urn = builder.make_dataset_urn(
+                platform=self.__config.dataset_type_mapping[datasource.type],
+                name="{}.{}.{}".format(
+                    datasource.datasource.database, datasource.schema_name, datasource.name
+                ),
+                env=self.__config.env,
+            )
+            LOGGER.info("{}={}".format(Constant.Dataset_URN, ds_urn))
+            # Create datasetProperties mcp
+            ds_properties = DatasetPropertiesClass(description=datasource.name)
+
+            info_mcp = self.new_mcp(
+                entity_type=Constant.DATASET,
+                entity_urn=ds_urn,
+                aspect_name=Constant.DATASET_PROPERTIES,
+                aspect=ds_properties,
+            )
+
+            # Remove status mcp
+            status_mcp = self.new_mcp(
+                entity_type=Constant.DATASET,
+                entity_urn=ds_urn,
+                aspect_name=Constant.STATUS,
+                aspect=StatusClass(removed=False),
+            )
+
+            dataset_mcps.extend([info_mcp, status_mcp])
+
+        return dataset_mcps
+
+
     def __to_datahub_dashboard(
         self,
         report: Report,
@@ -534,7 +660,7 @@ class Mapper:
         user_mcps: List[MetadataChangeProposalWrapper],
     ) -> List[MetadataChangeProposalWrapper]:
         """
-        Map PowerBi Report Server report to Datahub dashboard
+        Map PowerBi Report Server report to Datahub Dashboard
         """
 
         dashboard_urn = builder.make_dashboard_urn(
@@ -551,8 +677,8 @@ class Mapper:
                 "chartCount": str(0),
                 "workspaceName": "PowerBI Report Server",
                 "workspaceId": self.__config.domain_name,
+                "dataSource": str([report.ConnectionString for report in _report.DataSources])
             }
-
         # DashboardInfo mcp
         dashboard_info_cls = DashboardInfoClass(
             description=report.Description or "",
@@ -636,7 +762,7 @@ class Mapper:
         """
         LOGGER.info("Converting user {} to datahub's user".format(user.username))
 
-        # Create an URN for user
+        # Create an URN for User
         user_urn = builder.make_user_urn(user.get_urn_part())
 
         user_info_instance = CorpUserInfoClass(
@@ -645,6 +771,7 @@ class Mapper:
             title=user.properties.title,
             active=True,
         )
+
 
         info_mcp = self.new_mcp(
             entity_type=Constant.CORP_USER,
@@ -675,14 +802,15 @@ class Mapper:
     def to_datahub_work_units(self, report: Report) -> Set[EquableMetadataWorkUnit]:
         mcps = []
 
-        LOGGER.info("Converting dashboard={} to datahub dashboard".format(report.Name))
+        LOGGER.info("Converting Dashboard={} to DataHub Dashboard".format(report.Name))
         # Convert user to CorpUser
         user_mcps = self.to_datahub_user(report.UserInfo)
         # Convert tiles to charts
         ds_mcps: List[Any]
         chart_mcps: List[Any]
-        ds_mcps, chart_mcps = [], []  # self.to_datahub_chart(dashboard.tiles)
-        # Lets convert dashboard to datahub dashboard
+        # ds_mcps = self.__to_datahub_dataset(report)
+        chart_mcps, ds_mcps = [], []  # self.to_datahub_chart(dashboard.tiles)
+        # Lets convert Dashboard to DataHub Dashboard
         dashboard_mcps = self.__to_datahub_dashboard(report, chart_mcps, user_mcps)
 
         # Now add MCPs in sequence
@@ -717,9 +845,9 @@ class PowerBiReportServerDashboardSource(Source):
     """
         This plugin extracts the following:
 
-    - Power BI dashboards, tiles, datasets
-    - Names, descriptions and URLs of dashboard and tile
-    - Owners of dashboards
+    - Power BI Dashboards, tiles, datasets
+    - Names, descriptions and URLs of Dashboard and tile
+    - Owners of Dashboards
 
     ## Configuration Notes
 
@@ -768,24 +896,16 @@ class PowerBiReportServerDashboardSource(Source):
                 report.UserInfo = self.user_dao.get_owner_by_name(
                     user_name=report.DisplayName
                 )
-
+                # if report.HasDataSources:
+                #     report.DataSources = self.powerbi_client.get_report_data_sources(report)
             except ValidationError as e:
-                message = "Error ({}) occurred while loading user {}(id={})".format(
+                message = "Error ({}) occurred while loading User {}(id={})".format(
                     e, report.Name, report.Id
                 )
                 LOGGER.exception(message, e)
                 self.report.report_warning(report.Id, message)
-                user_data = dict(
-                    urn=f"urn:li:corpuser:{report.DisplayName}",
-                    type=Constant.CORP_USER,
-                    username=report.DisplayName,
-                    properties=dict(
-                        active=True, displayName=report.DisplayName, email=""
-                    ),
-                )
-                report.UserInfo = CorpUser.parse_obj(user_data)
             finally:
-                # Increase dashboard and tiles count in report
+                # Increase Dashboard and tiles count in report
                 self.report.report_scanned(count=1)
             # Convert PowerBi Report Server Dashboard and child entities
             # to Datahub work unit to ingest into Datahub

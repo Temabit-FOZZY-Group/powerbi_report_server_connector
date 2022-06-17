@@ -22,10 +22,14 @@ class CatalogItem(BaseModel):
     IsFavorite: bool
     UserInfo: Any
     DisplayName: Optional[str]
+    HasDataSources: bool = False
+    DataSources: Optional[List["DataSource"]] = []
 
     @validator("DisplayName", always=True)
     def validate_diplay_name(cls, value, values):  # noqa: N805
-        return values["CreatedBy"].split("\\")[-1]
+        if values["CreatedBy"]:
+            return values["CreatedBy"].split("\\")[-1]
+        return ""
 
     def get_urn_part(self):
         return "reports.{}".format(self.Id)
@@ -59,7 +63,7 @@ class DataSet(CatalogItem):
 class DataModelDataSource(BaseModel):
     AuthType: Optional[str]
     SupportedAuthTypes: List[Optional[str]]
-    Kind: Optional[Callable]
+    Kind: str
     ModelConnectionName: str
     Secret: str
     Type: Optional[str]
@@ -113,7 +117,10 @@ class MetaData(BaseModel):
 
 
 class DataSource(CatalogItem):
+    Name: Optional[str]
+    Path: Optional[str]
     IsEnabled: bool
+    ConnectionString: str
     DataModelDataSource: Optional[DataModelDataSource]
     DataSourceSubType: Optional[str]
     DataSourceType: Optional[str]
@@ -234,3 +241,6 @@ class System(BaseModel):
     ProductVersion: str
     ProductType: str
     TimeZone: str
+
+
+CatalogItem.update_forward_refs()
