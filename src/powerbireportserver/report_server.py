@@ -31,6 +31,7 @@ from datahub.metadata.schema_classes import (
     CorpUserKeyClass,
     DashboardInfoClass,
     DashboardKeyClass,
+    DatasetPropertiesClass,
     OwnerClass,
     OwnershipClass,
     OwnershipTypeClass,
@@ -399,16 +400,19 @@ class PowerBiReportServerAPI:
 
         return datasource
 
-
-    def get_report_data_sources(self, report: Union[Report, PowerBiReport]) -> List[DataSource]:
+    def get_report_data_sources(
+        self, report: Union[Report, PowerBiReport]
+    ) -> List[DataSource]:
         """
         Fetch the data source from PowerBi for the given dataset
         """
         report_types_mapping: Dict[str, Any] = {
             Constant.TYPE_REPORT: API_ENDPOINTS[Constant.REPORT_DATASOURCES],
-            Constant.TYPE_POWERBI_REPORT: API_ENDPOINTS[Constant.POWERBI_REPORT_DATASOURCES],
+            Constant.TYPE_POWERBI_REPORT: API_ENDPOINTS[
+                Constant.POWERBI_REPORT_DATASOURCES
+            ],
         }
-        data_sources = []
+        data_sources: List[DataSource] = []
         # datasource_get_endpoint: str = API_ENDPOINTS[Constant.DATASET_DATASOURCES]
         # Replace place holders
         datasource_get_endpoint = report_types_mapping[report.Type].format(
@@ -431,16 +435,17 @@ class PowerBiReportServerAPI:
         values = res["value"]
         if len(values) == 0:
             LOGGER.info(
-                "No DataSources found for Report {}({})".format(
-                    report.Name, report.Id
-                )
+                "No DataSources found for Report {}({})".format(report.Name, report.Id)
             )
             return data_sources
         # Consider only zero index datasource
         if values:
             for value in values:
                 data_source = DataSource.parse_obj(value)
-                if self.__config.dataset_type_mapping.get(data_source.DataSourceType) is not None:
+                if (data_source.DataSourceType and
+                    self.__config.dataset_type_mapping.get(data_source.DataSourceType)
+                    is not None
+                ):
                     # Now set the database detail as it is relational data source
                     data_source.MetaData = MetaData(is_relational=True)
                 else:
@@ -454,6 +459,7 @@ class PowerBiReportServerAPI:
 
             return data_sources
         return data_sources
+
 
 class UserDao:
     def __init__(self, config: PowerBiReportServerDashboardSourceConfig):
@@ -519,9 +525,7 @@ class UserDao:
             urn=f"urn:li:corpuser:{user_name}",
             type=Constant.CORP_USER,
             username=user_name,
-            properties=dict(
-                active=True, displayName=user_name, email=""
-            ),
+            properties=dict(active=True, displayName=user_name, email=""),
         )
         return CorpUser.parse_obj(user_data)
 
@@ -589,69 +593,67 @@ class Mapper:
             )
         )
 
-    def __to_datahub_dataset(
-            self, report: Optional[Report]
-    ) -> List[MetadataChangeProposalWrapper]:
-        """
-        Map PowerBi Report Server report DataSources to datahub dataset.
-        Here we are mapping each table of PowerBi Report Server DataSource to Datahub dataset.
-        """
-
-        dataset_mcps: List[MetadataChangeProposalWrapper] = []
-        if not report.HasDataSources:
-            return dataset_mcps
-
-        # We are only suporting relation PowerBi Report Server DataSources
-        if (
-                not report.DataSources
-                or report.DataSources.MetaData.is_relational is False
-        ):
-            LOGGER.warning(
-                "Report {}({}) has not relational DataSource".format(
-                    report.Name, report.Id
-                )
-            )
-            return dataset_mcps
-
-        LOGGER.info(
-            "Converting Report DataSource, Report={}(id={}) to DataHub DataSet".format(
-                report.Name, report.Id
-            )
-        )
-
-        for datasource in report.DataSources:
-            # Create an URN for dataset
-
-            ds_urn = builder.make_dataset_urn(
-                platform=self.__config.dataset_type_mapping[datasource.type],
-                name="{}.{}.{}".format(
-                    datasource.datasource.database, datasource.schema_name, datasource.name
-                ),
-                env=self.__config.env,
-            )
-            LOGGER.info("{}={}".format(Constant.Dataset_URN, ds_urn))
-            # Create datasetProperties mcp
-            ds_properties = DatasetPropertiesClass(description=datasource.name)
-
-            info_mcp = self.new_mcp(
-                entity_type=Constant.DATASET,
-                entity_urn=ds_urn,
-                aspect_name=Constant.DATASET_PROPERTIES,
-                aspect=ds_properties,
-            )
-
-            # Remove status mcp
-            status_mcp = self.new_mcp(
-                entity_type=Constant.DATASET,
-                entity_urn=ds_urn,
-                aspect_name=Constant.STATUS,
-                aspect=StatusClass(removed=False),
-            )
-
-            dataset_mcps.extend([info_mcp, status_mcp])
-
-        return dataset_mcps
-
+    # def __to_datahub_dataset(
+    #     self, report: Report
+    # ) -> List[MetadataChangeProposalWrapper]:
+    #     """
+    #     Map PowerBi Report Server report DataSources to datahub dataset.
+    #     Here we are mapping each table of PowerBi Report Server DataSource to Datahub dataset.
+    #     """
+    #
+    #     dataset_mcps: List[MetadataChangeProposalWrapper] = []
+    #     if not report.HasDataSources:
+    #         return dataset_mcps
+    #
+    #     # We are only suporting relation PowerBi Report Server DataSources
+    #     if not report.DataSources or report.DataSources.MetaData.is_relational is False:
+    #         LOGGER.warning(
+    #             "Report {}({}) has not relational DataSource".format(
+    #                 report.Name, report.Id
+    #             )
+    #         )
+    #         return dataset_mcps
+    #
+    #     LOGGER.info(
+    #         "Converting Report DataSource, Report={}(id={}) to DataHub DataSet".format(
+    #             report.Name, report.Id
+    #         )
+    #     )
+    #
+    #     for datasource in report.DataSources:
+    #         # Create an URN for dataset
+    #
+    #         ds_urn = builder.make_dataset_urn(
+    #             platform=self.__config.dataset_type_mapping[datasource.type],
+    #             name="{}.{}.{}".format(
+    #                 datasource.datasource.database,
+    #                 datasource.schema_name,
+    #                 datasource.name,
+    #             ),
+    #             env=self.__config.env,
+    #         )
+    #         LOGGER.info("{}={}".format(Constant.Dataset_URN, ds_urn))
+    #         # Create datasetProperties mcp
+    #         ds_properties = DatasetPropertiesClass(description=datasource.name)
+    #
+    #         info_mcp = self.new_mcp(
+    #             entity_type=Constant.DATASET,
+    #             entity_urn=ds_urn,
+    #             aspect_name=Constant.DATASET_PROPERTIES,
+    #             aspect=ds_properties,
+    #         )
+    #
+    #         # Remove status mcp
+    #         status_mcp = self.new_mcp(
+    #             entity_type=Constant.DATASET,
+    #             entity_urn=ds_urn,
+    #             aspect_name=Constant.STATUS,
+    #             aspect=StatusClass(removed=False),
+    #         )
+    #
+    #         dataset_mcps.extend([info_mcp, status_mcp])
+    #
+    #     return dataset_mcps
 
     def __to_datahub_dashboard(
         self,
@@ -677,8 +679,11 @@ class Mapper:
                 "chartCount": str(0),
                 "workspaceName": "PowerBI Report Server",
                 "workspaceId": self.__config.domain_name,
-                "dataSource": str([report.ConnectionString for report in _report.DataSources])
+                "dataSource": str(
+                    [report.ConnectionString for report in _report.DataSources]
+                ) if _report.DataSources else "",
             }
+
         # DashboardInfo mcp
         dashboard_info_cls = DashboardInfoClass(
             description=report.Description or "",
@@ -771,7 +776,6 @@ class Mapper:
             title=user.properties.title,
             active=True,
         )
-
 
         info_mcp = self.new_mcp(
             entity_type=Constant.CORP_USER,

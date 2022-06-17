@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any, Dict, List, Optional
 
 from pydantic import BaseModel, validator
 
@@ -117,8 +117,8 @@ class MetaData(BaseModel):
 
 
 class DataSource(CatalogItem):
-    Name: Optional[str]
-    Path: Optional[str]
+    Name: str = ''
+    Path: str = ''
     IsEnabled: bool
     ConnectionString: str
     DataModelDataSource: Optional[DataModelDataSource]
