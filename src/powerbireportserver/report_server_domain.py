@@ -117,8 +117,8 @@ class MetaData(BaseModel):
 
 
 class DataSource(CatalogItem):
-    Name: str = ''
-    Path: str = ''
+    Name: str = ""
+    Path: str = ""
     IsEnabled: bool
     ConnectionString: str
     DataModelDataSource: Optional[DataModelDataSource]

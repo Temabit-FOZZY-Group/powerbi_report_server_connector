@@ -63,7 +63,10 @@ class PowerBiReportServerAPIConfig(EnvBasedSourceConfigBase):
     username: str = Field(description="Windows account username")
     password: str = Field(description="Windows account password")
     workstation_name: str = Field(default="localhost", description="Workstation name")
-    domain_name: str = Field(description="Server domain name")
+    host_port: str = Field(description="Power BI Report Server host URL")
+    server_alias: str = Field(
+        default="", description="Alias for Power BI Report Server host URL"
+    )
     graphql_url: str = Field(description="GraphQL API URL")
     report_virtual_directory_name: str = Field(
         description="Report Virtual Directory URL name"
@@ -72,7 +75,8 @@ class PowerBiReportServerAPIConfig(EnvBasedSourceConfigBase):
         description="Report Server Virtual Directory URL name"
     )
     dataset_type_mapping: Dict[str, str] = Field(
-        description="Mapping of Power BI DataSource type to Datahub DataSet."
+        default={},
+        description="Mapping of Power BI DataSource type to Datahub DataSet.",
     )
     scan_timeout: int = Field(
         default=60,
@@ -82,14 +86,18 @@ class PowerBiReportServerAPIConfig(EnvBasedSourceConfigBase):
     @property
     def get_base_api_url(self):
         return "http://{}/{}/api/v2.0/".format(
-            self.domain_name, self.report_virtual_directory_name
+            self.host_port, self.report_virtual_directory_name
         )
 
     @property
     def get_base_url(self):
         return "http://{}/{}/".format(
-            self.domain_name, self.report_virtual_directory_name
+            self.host_port, self.report_virtual_directory_name
         )
+
+    @property
+    def host(self):
+        return self.server_alias or self.host_port.split(":")[0]
 
 
 class PowerBiReportServerDashboardSourceConfig(PowerBiReportServerAPIConfig):
@@ -442,8 +450,11 @@ class PowerBiReportServerAPI:
         if values:
             for value in values:
                 data_source = DataSource.parse_obj(value)
-                if (data_source.DataSourceType and
-                    self.__config.dataset_type_mapping.get(data_source.DataSourceType)
+                if (
+                    data_source.DataSourceType
+                    and self.__config.dataset_type_mapping.get(
+                        data_source.DataSourceType
+                    )
                     is not None
                 ):
                     # Now set the database detail as it is relational data source
@@ -678,10 +689,12 @@ class Mapper:
             return {
                 "chartCount": str(0),
                 "workspaceName": "PowerBI Report Server",
-                "workspaceId": self.__config.domain_name,
+                "workspaceId": self.__config.host_port,
                 "dataSource": str(
                     [report.ConnectionString for report in _report.DataSources]
-                ) if _report.DataSources else "",
+                )
+                if _report.DataSources
+                else "",
             }
 
         # DashboardInfo mcp
@@ -740,11 +753,7 @@ class Mapper:
 
         # Dashboard browsePaths
         browse_path = BrowsePathsClass(
-            paths=[
-                report.get_browse_path(
-                    "powerbi_report_server", self.__config.domain_name
-                )
-            ]
+            paths=[report.get_browse_path("powerbi_report_server", self.__config.host)]
         )
         browse_path_mcp = self.new_mcp(
             entity_type=Constant.DASHBOARD,

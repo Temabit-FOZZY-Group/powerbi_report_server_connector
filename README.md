@@ -43,11 +43,13 @@ To ingest (.rdl), (.pbix) and mobile reports using this module you need:
             password: password
             # Your Workstation name
             workstation_name: workstation_name
-            # Your server domain name
-            domain_name: domain_name
-            # Workspace's dataset environments (PROD, DEV, QA, STAGE)
+            # Your Power BI Report Server host URL, example: localhost:80
+            host_port: host_port
+            # Your alias for Power BI Report Server host URL, example: local_powerbi_report_server
+            server_alias: server_alias
+            # Workspace's dataset environments, example: (PROD, DEV, QA, STAGE)
             env: DEV
-            # Workspace's dataset environments (PROD, DEV, QA, STAGE)
+            # Workspace's dataset environments, example: (PROD, DEV, QA, STAGE)
             graphql_url: http://localhost:8080/api/graphql
             # Your Power BI Report Server base virtual directory name for reports
             report_virtual_directory_name: Reports
