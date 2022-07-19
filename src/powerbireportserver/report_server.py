@@ -470,7 +470,7 @@ class Mapper:
         """
         Map PowerBi Report Server report to Datahub Dashboard
         """
-
+        print(report)
         dashboard_urn = builder.make_dashboard_urn(
             self.__config.platform_name, report.get_urn_part()
         )
@@ -483,12 +483,12 @@ class Mapper:
         ) -> dict:
             return {
                 "workspaceName": "PowerBI Report Server",
-                "workspaceId": self.__config.host_port,
-                "dataSource": str(
-                    [report.connection_string for report in _report.data_sources]
-                )
-                if _report.data_sources
-                else "",
+                # "workspaceId": self.__config.host_port,
+                # "dataSource": str(
+                #     [report.connection_string for report in _report.data_sources]
+                # )
+                # if _report.data_sources
+                # else "",
             }
 
         # DashboardInfo mcp
