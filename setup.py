@@ -14,7 +14,7 @@ plugins: Dict[str, Set[str]] = {
 
 setup_output = setup(
     name="powerbi_report_server",
-    version="0.0.3",
+    version="0.0.4",
     description="Ingest PowerBi Report Server metadata to DataHub",
     package_dir={"": "src"},
     packages=find_packages("src"),
