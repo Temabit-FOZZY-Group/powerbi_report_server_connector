@@ -483,22 +483,30 @@ class Mapper:
         ) -> dict:
             return {
                 "workspaceName": "PowerBI Report Server",
-                # "workspaceId": self.__config.host_port,
-                # "dataSource": str(
-                #     [report.connection_string for report in _report.data_sources]
-                # )
-                # if _report.data_sources
-                # else "",
+                "workspaceId": self.__config.host_port,
+                "dataSource": str(
+                    [report.connection_string for report in _report.data_sources]
+                )
+                if _report.data_sources
+                else "",
             }
 
         # DashboardInfo mcp
+        # dashboard_info_cls = DashboardInfoClass(
+        #     description=report.description or "",
+        #     title=report.name or "",
+        #     charts=chart_urn_list,
+        #     lastModified=ChangeAuditStamps(),
+        #     dashboardUrl=report.get_web_url(self.__config.get_base_url),
+        #     customProperties={**custom_properties(report)},
+        # )
         dashboard_info_cls = DashboardInfoClass(
-            description=report.description or "",
-            title=report.name or "",
-            charts=chart_urn_list,
+            description="",
+            title="",
+            charts=[],
             lastModified=ChangeAuditStamps(),
-            dashboardUrl=report.get_web_url(self.__config.get_base_url),
-            customProperties={**custom_properties(report)},
+            dashboardUrl="",
+            customProperties={},
         )
 
         info_mcp = self.new_mcp(
