@@ -470,7 +470,6 @@ class Mapper:
         """
         Map PowerBi Report Server report to Datahub Dashboard
         """
-        print(report)
         dashboard_urn = builder.make_dashboard_urn(
             self.__config.platform_name, report.get_urn_part()
         )
@@ -492,21 +491,13 @@ class Mapper:
             }
 
         # DashboardInfo mcp
-        # dashboard_info_cls = DashboardInfoClass(
-        #     description=report.description or "",
-        #     title=report.name or "",
-        #     charts=chart_urn_list,
-        #     lastModified=ChangeAuditStamps(),
-        #     dashboardUrl=report.get_web_url(self.__config.get_base_url),
-        #     customProperties={**custom_properties(report)},
-        # )
         dashboard_info_cls = DashboardInfoClass(
-            description="",
-            title="",
-            charts=[],
+            description=report.description or "",
+            title=report.name or "",
+            charts=chart_urn_list,
             lastModified=ChangeAuditStamps(),
-            dashboardUrl="",
-            customProperties={},
+            dashboardUrl=report.get_web_url(self.__config.get_base_url),
+            customProperties={**custom_properties(report)},
         )
 
         info_mcp = self.new_mcp(

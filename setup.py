@@ -4,7 +4,7 @@ from setuptools import find_packages, setup
 
 plugins: Dict[str, Set[str]] = {
     "powerbireportserver": {
-        "acryl-datahub",
+        "acryl-datahub==0.8.40",
         "orderedset",
         "pydantic",
         "requests",
