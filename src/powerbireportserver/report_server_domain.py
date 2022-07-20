@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import Any, Dict, List, Optional
 
-from pydantic import BaseModel, validator, Field
+from pydantic import BaseModel, Field, validator
 
 
 class CatalogItem(BaseModel):
@@ -22,8 +22,10 @@ class CatalogItem(BaseModel):
     is_favorite: bool = Field(alias="IsFavorite")
     user_info: Any = Field(alias="UserInfo")
     display_name: Optional[str] = Field(alias="DisplayName")
-    has_data_sources: bool = Field(default=False,alias="HasDataSources")
-    data_sources: Optional[List["DataSource"]] = Field(default_factory=list,alias="DataSources")
+    has_data_sources: bool = Field(default=False, alias="HasDataSources")
+    data_sources: Optional[List["DataSource"]] = Field(
+        default_factory=list, alias="DataSources"
+    )
 
     @validator("display_name", always=True)
     def validate_diplay_name(cls, value, values):  # noqa: N805
@@ -106,7 +108,9 @@ class Subscription(BaseModel):
     last_status: str = Field(alias="LastStatus")
     extension_settings: ExtensionSettings = Field(alias="ExtensionSettings")
     delivery_extension: str = Field(alias="DeliveryExtension")
-    localized_delivery_extension_name: str = Field(alias="LocalizedDeliveryExtensionName")
+    localized_delivery_extension_name: str = Field(
+        alias="LocalizedDeliveryExtensionName"
+    )
     modified_by: str = Field(alias="ModifiedBy")
     modified_date: datetime = Field(alias="ModifiedDate")
     parameter_values: ParameterValue = Field(alias="ParameterValues")
@@ -121,13 +125,19 @@ class DataSource(CatalogItem):
     path: str = Field(default="", alias="Path")
     is_enabled: bool = Field(alias="IsEnabled")
     connection_string: str = Field(alias="ConnectionString")
-    data_model_data_source: Optional[DataModelDataSource] = Field(alias="DataModelDataSource")
+    data_model_data_source: Optional[DataModelDataSource] = Field(
+        alias="DataModelDataSource"
+    )
     data_source_sub_type: Optional[str] = Field(alias="DataSourceSubType")
     data_source_type: Optional[str] = Field(alias="DataSourceType")
-    is_original_connection_string_expression_based: bool = Field(alias="IsOriginalConnectionStringExpressionBased")
+    is_original_connection_string_expression_based: bool = Field(
+        alias="IsOriginalConnectionStringExpressionBased"
+    )
     is_connection_string_overridden: bool = Field(alias="IsConnectionStringOverridden")
     credentials_by_user: Optional[CredentialsByUser] = Field(alias="CredentialsByUser")
-    credentials_in_server: Optional[CredentialsInServer] = Field(alias="CredentialsInServer")
+    credentials_in_server: Optional[CredentialsInServer] = Field(
+        alias="CredentialsInServer"
+    )
     is_reference: bool = Field(alias="IsReference")
     subscriptions: Optional[Subscription] = Field(alias="Subscriptions")
     meta_data: Optional[MetaData] = Field(alias="MetaData")

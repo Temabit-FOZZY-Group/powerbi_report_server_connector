@@ -62,7 +62,9 @@ class CorpUser(BaseModel):
     type: str
     username: str
     properties: CorpUserProperties
-    editable_properties: Optional[CorpUserEditableProperties] = Field(alias="editableProperties")
+    editable_properties: Optional[CorpUserEditableProperties] = Field(
+        alias="editableProperties"
+    )
     status: Optional[CorpUserStatus]
     tags: Optional[GlobalTags]
     relationships: Optional[EntityRelationshipsResult]

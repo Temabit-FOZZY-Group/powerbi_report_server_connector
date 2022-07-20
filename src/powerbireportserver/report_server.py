@@ -4,17 +4,11 @@
 #
 #########################################################
 import logging
-from dataclasses import dataclass
-from dataclasses import field as dataclass_field
+from dataclasses import dataclass, field as dataclass_field
 from typing import Any, Dict, Iterable, List, Optional, Set
 
-import requests
-from orderedset import OrderedSet
-from pydantic import ValidationError
-from pydantic.fields import Field
-from requests_ntlm import HttpNtlmAuth
-
 import datahub.emitter.mce_builder as builder
+import requests
 from datahub.configuration.common import AllowDenyPattern
 from datahub.configuration.source_common import EnvBasedSourceConfigBase
 from datahub.emitter.mcp import MetadataChangeProposalWrapper
@@ -42,6 +36,10 @@ from datahub.metadata.schema_classes import (
     OwnershipTypeClass,
     StatusClass,
 )
+from orderedset import OrderedSet
+from pydantic import ValidationError
+from pydantic.fields import Field
+from requests_ntlm import HttpNtlmAuth
 
 from .constants import API_ENDPOINTS, Constant
 from .graphql_domain import CorpUser
@@ -71,10 +69,6 @@ class PowerBiReportServerAPIConfig(EnvBasedSourceConfigBase):
     report_server_virtual_directory_name: str = Field(
         description="Report Server Virtual Directory URL name"
     )
-    dataset_type_mapping: Dict[str, str] = Field(
-        default={},
-        description="Mapping of Power BI DataSource type to Datahub DataSet.",
-    )
     scan_timeout: int = Field(
         default=60,
         description="time in seconds to wait for Power BI metadata scan result.",
@@ -82,7 +76,7 @@ class PowerBiReportServerAPIConfig(EnvBasedSourceConfigBase):
 
     @property
     def get_base_api_url(self):
-        return "http://{}/{}/api/v2.0/".format(
+        return "https://{}/{}/api/v2.0".format(
             self.host_port, self.report_virtual_directory_name
         )
 
@@ -129,7 +123,9 @@ class PowerBiReportServerAPI:
         # Hit PowerBi Report Server
         LOGGER.info("Request to URL={}".format(user_list_endpoint))
         response = requests.get(
-            url=user_list_endpoint, auth=self.get_auth_credentials()
+            url=user_list_endpoint,
+            auth=self.get_auth_credentials(),
+            verify=False,
         )
 
         # Check if we got response from PowerBi Report Server
@@ -175,6 +171,7 @@ class PowerBiReportServerAPI:
         response = requests.get(
             url=report_get_endpoint,
             auth=self.get_auth_credentials(),
+            verify=False,
         )
 
         # Check if we got response from PowerBi Report Server
@@ -208,6 +205,7 @@ class PowerBiReportServerAPI:
         response = requests.get(
             url=powerbi_report_get_endpoint,
             auth=self.get_auth_credentials(),
+            verify=False,
         )
 
         # Check if we got response from PowerBi Report Server
@@ -240,6 +238,7 @@ class PowerBiReportServerAPI:
         response = requests.get(
             url=linked_report_get_endpoint,
             auth=self.get_auth_credentials(),
+            verify=False,
         )
 
         # Check if we got response from PowerBi Report Server
@@ -273,6 +272,7 @@ class PowerBiReportServerAPI:
         response = requests.get(
             url=mobile_report_get_endpoint,
             auth=self.get_auth_credentials(),
+            verify=False,
         )
 
         # Check if we got response from PowerBi Report Server
@@ -310,6 +310,7 @@ class PowerBiReportServerAPI:
             response = requests.get(
                 url=report_get_endpoint,
                 auth=self.get_auth_credentials(),
+                verify=False,
             )
 
             # Check if we got response from PowerBi Report Server
