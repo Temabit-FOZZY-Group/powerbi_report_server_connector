@@ -121,18 +121,17 @@ class PowerBiReportServerAPI:
 
     def requests_get(self, url_http: str, url_https: str, content_type: str):
         try:
-            LOGGER.info("Request to Report URL={}".format(url_http))
-            response = requests.get(
-                url=url_http,
-                auth=self.get_auth_credentials,
-                verify=False,
-            )
-        except ConnectionError:
             LOGGER.info("Request to Report URL={}".format(url_https))
             response = requests.get(
                 url=url_https,
                 auth=self.get_auth_credentials,
                 verify=False,
+            )
+        except ConnectionError:
+            LOGGER.info("Request to Report URL={}".format(url_http))
+            response = requests.get(
+                url=url_http,
+                auth=self.get_auth_credentials,
             )
         # Check if we got response from PowerBi Report Server
         if response.status_code != 200:
@@ -142,48 +141,6 @@ class PowerBiReportServerAPI:
             raise ValueError(message)
 
         return response.json()
-
-
-    def get_users_policies(self) -> List[SystemPolicies]:
-        """
-        Get User policy by Power Bi Report Server System
-        """
-        user_list_endpoint: str = API_ENDPOINTS[Constant.SYSTEM_POLICIES]
-        # Replace place holders
-        user_list_endpoint = user_list_endpoint.format(
-            PBIRS_BASE_URL=self.__config.get_base_api_url
-        )
-        # Hit PowerBi Report Server
-        LOGGER.info("Request to URL={}".format(user_list_endpoint))
-
-        response = requests.get(
-            url=user_list_endpoint,
-            auth=self.get_auth_credentials,
-            verify=False,
-        )
-
-        # Check if we got response from PowerBi Report Server
-        if response.status_code != 200:
-            LOGGER.warning(
-                "Failed to fetch User list from power-bi for, http_status={}, message={}".format(
-                    response.status_code, response.text
-                )
-            )
-            raise ConnectionError("Failed to fetch the User list from the power-bi")
-
-        users_dict: List[Any] = response.json()[Constant.VALUE]
-        # Iterate through response and create a list of PowerBiReportServerAPI.Dashboard
-        users: List[SystemPolicies] = [
-            SystemPolicies.parse_obj(instance) for instance in users_dict
-        ]
-        return users
-
-    def get_user_policies(self, user_name: str) -> Optional[SystemPolicies]:
-        users_policies = self.get_users_policies()
-        for user_policy in users_policies:
-            if user_policy.group_user_name == user_name:
-                return user_policy
-        return None
 
     def get_report(self, report_id: str) -> Optional[Report]:
         """
