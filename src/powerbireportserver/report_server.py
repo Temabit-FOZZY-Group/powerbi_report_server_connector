@@ -9,6 +9,7 @@ from typing import Any, Dict, Iterable, List, Optional, Set
 
 import datahub.emitter.mce_builder as builder
 import requests
+from requests.exceptions import ConnectionError
 from datahub.configuration.common import AllowDenyPattern
 from datahub.configuration.source_common import EnvBasedSourceConfigBase
 from datahub.emitter.mcp import MetadataChangeProposalWrapper
@@ -75,7 +76,13 @@ class PowerBiReportServerAPIConfig(EnvBasedSourceConfigBase):
     )
 
     @property
-    def get_base_api_url(self):
+    def get_base_api_http_url(self):
+        return "http://{}/{}/api/v2.0".format(
+            self.host_port, self.report_virtual_directory_name
+        )
+
+    @property
+    def get_base_api_https_url(self):
         return "https://{}/{}/api/v2.0".format(
             self.host_port, self.report_virtual_directory_name
         )
@@ -108,8 +115,34 @@ class PowerBiReportServerAPI:
             self.__config.password,
         )
 
+    @property
     def get_auth_credentials(self):
         return self.__auth
+
+    def requests_get(self, url_http: str, url_https: str, content_type: str):
+        try:
+            LOGGER.info("Request to Report URL={}".format(url_http))
+            response = requests.get(
+                url=url_http,
+                auth=self.get_auth_credentials,
+                verify=False,
+            )
+        except ConnectionError:
+            LOGGER.info("Request to Report URL={}".format(url_https))
+            response = requests.get(
+                url=url_https,
+                auth=self.get_auth_credentials,
+                verify=False,
+            )
+        # Check if we got response from PowerBi Report Server
+        if response.status_code != 200:
+            message: str = "Failed to fetch Report from power-bi-report-server for"
+            LOGGER.warning(message)
+            LOGGER.warning("{}={}".format(Constant.ReportId, content_type))
+            raise ValueError(message)
+
+        return response.json()
+
 
     def get_users_policies(self) -> List[SystemPolicies]:
         """
@@ -122,9 +155,10 @@ class PowerBiReportServerAPI:
         )
         # Hit PowerBi Report Server
         LOGGER.info("Request to URL={}".format(user_list_endpoint))
+
         response = requests.get(
             url=user_list_endpoint,
-            auth=self.get_auth_credentials(),
+            auth=self.get_auth_credentials,
             verify=False,
         )
 
@@ -162,26 +196,20 @@ class PowerBiReportServerAPI:
 
         report_get_endpoint: str = API_ENDPOINTS[Constant.REPORT]
         # Replace place holders
-        report_get_endpoint = report_get_endpoint.format(
-            PBIRS_BASE_URL=self.__config.get_base_api_url,
+        report_get_endpoint_http = report_get_endpoint.format(
+            PBIRS_BASE_URL=self.__config.get_base_api_http_url,
+            REPORT_ID=report_id,
+        )
+        report_get_endpoint_https = report_get_endpoint.format(
+            PBIRS_BASE_URL=self.__config.get_base_https_api_url,
             REPORT_ID=report_id,
         )
         # Hit PowerBiReportServer
-        LOGGER.info("Request to Report URL={}".format(report_get_endpoint))
-        response = requests.get(
-            url=report_get_endpoint,
-            auth=self.get_auth_credentials(),
-            verify=False,
+        response_dict = self.requests_get(
+            url_http=report_get_endpoint_http,
+            url_https=report_get_endpoint_https,
+            content_type=Constant.REPORT
         )
-
-        # Check if we got response from PowerBi Report Server
-        if response.status_code != 200:
-            message: str = "Failed to fetch Report from power-bi-report-server for"
-            LOGGER.warning(message)
-            LOGGER.warning("{}={}".format(Constant.ReportId, report_id))
-            raise ConnectionError(message)
-
-        response_dict = response.json()
 
         return Report.parse_obj(response_dict)
 
@@ -196,26 +224,20 @@ class PowerBiReportServerAPI:
 
         powerbi_report_get_endpoint: str = API_ENDPOINTS[Constant.POWERBI_REPORT]
         # Replace place holders
-        powerbi_report_get_endpoint = powerbi_report_get_endpoint.format(
-            PBIRS_BASE_URL=self.__config.get_base_api_url,
+        powerbi_report_get_endpoint_http = powerbi_report_get_endpoint.format(
+            PBIRS_BASE_URL=self.__config.get_base_api_http_url,
+            POWERBI_REPORT_ID=report_id,
+        )
+        powerbi_report_get_endpoint_https = powerbi_report_get_endpoint.format(
+            PBIRS_BASE_URL=self.__config.get_base_api_https_url,
             POWERBI_REPORT_ID=report_id,
         )
         # Hit PowerBiReportServer
-        LOGGER.info("Request to Report URL={}".format(powerbi_report_get_endpoint))
-        response = requests.get(
-            url=powerbi_report_get_endpoint,
-            auth=self.get_auth_credentials(),
-            verify=False,
+        response_dict = self.requests_get(
+            url_http=powerbi_report_get_endpoint_http,
+            url_https=powerbi_report_get_endpoint_https,
+            content_type=Constant.POWERBI_REPORT
         )
-
-        # Check if we got response from PowerBi Report Server
-        if response.status_code != 200:
-            message: str = "Failed to fetch Report from power-bi-report-server for"
-            LOGGER.warning(message)
-            LOGGER.warning("{}={}".format(Constant.ReportId, report_id))
-            raise ConnectionError(message)
-
-        response_dict = response.json()
         return PowerBiReport.parse_obj(response_dict)
 
     def get_linked_report(self, report_id: str) -> Optional[LinkedReport]:
@@ -229,26 +251,20 @@ class PowerBiReportServerAPI:
 
         linked_report_get_endpoint: str = API_ENDPOINTS[Constant.LINKED_REPORT]
         # Replace place holders
-        linked_report_get_endpoint = linked_report_get_endpoint.format(
-            PBIRS_BASE_URL=self.__config.get_base_api_url,
+        linked_report_get_endpoint_http = linked_report_get_endpoint.format(
+            PBIRS_BASE_URL=self.__config.get_base_api_http_url,
+            LINKED_REPORT_ID=report_id,
+        )
+        linked_report_get_endpoint_https = linked_report_get_endpoint.format(
+            PBIRS_BASE_URL=self.__config.get_base_api_https_url,
             LINKED_REPORT_ID=report_id,
         )
         # Hit PowerBiReportServer
-        LOGGER.info("Request to Report URL={}".format(linked_report_get_endpoint))
-        response = requests.get(
-            url=linked_report_get_endpoint,
-            auth=self.get_auth_credentials(),
-            verify=False,
+        response_dict = self.requests_get(
+            url_http=linked_report_get_endpoint_http,
+            url_https=linked_report_get_endpoint_https,
+            content_type=Constant.LINKED_REPORT
         )
-
-        # Check if we got response from PowerBi Report Server
-        if response.status_code != 200:
-            message: str = "Failed to fetch Report from power-bi-report-server for"
-            LOGGER.warning(message)
-            LOGGER.warning("{}={}".format(Constant.ReportId, report_id))
-            raise ConnectionError(message)
-
-        response_dict = response.json()
 
         return LinkedReport.parse_obj(response_dict)
 
@@ -263,26 +279,20 @@ class PowerBiReportServerAPI:
 
         mobile_report_get_endpoint: str = API_ENDPOINTS[Constant.MOBILE_REPORT]
         # Replace place holders
-        mobile_report_get_endpoint = mobile_report_get_endpoint.format(
-            PBIRS_BASE_URL=self.__config.get_base_api_url,
+        mobile_report_get_endpoint_http = mobile_report_get_endpoint.format(
+            PBIRS_BASE_URL=self.__config.get_base_api_http_url,
+            MOBILE_REPORT_ID=report_id,
+        )
+        mobile_report_get_endpoint_https = mobile_report_get_endpoint.format(
+            PBIRS_BASE_URL=self.__config.get_base_api_https_url,
             MOBILE_REPORT_ID=report_id,
         )
         # Hit PowerBi ReportServer
-        LOGGER.info("Request to Report URL={}".format(mobile_report_get_endpoint))
-        response = requests.get(
-            url=mobile_report_get_endpoint,
-            auth=self.get_auth_credentials(),
-            verify=False,
+        response_dict = self.requests_get(
+            url_http=mobile_report_get_endpoint_http,
+            url_https=mobile_report_get_endpoint_https,
+            content_type=Constant.MOBILE_REPORT
         )
-
-        # Check if we got response from PowerBi Report Server
-        if response.status_code != 200:
-            message: str = "Failed to fetch Report from power-bi-report-server for"
-            LOGGER.warning(message)
-            LOGGER.warning("{}={}".format(Constant.ReportId, report_id))
-            raise ConnectionError(message)
-
-        response_dict = response.json()
 
         return MobileReport.parse_obj(response_dict)
 
@@ -299,28 +309,19 @@ class PowerBiReportServerAPI:
 
         reports: List[Any] = []
         for report_type in report_types_mapping.keys():
-
             report_get_endpoint: str = API_ENDPOINTS[report_type]
             # Replace place holders
-            report_get_endpoint = report_get_endpoint.format(
-                PBIRS_BASE_URL=self.__config.get_base_api_url,
+            report_get_endpoint_http = report_get_endpoint.format(
+                PBIRS_BASE_URL=self.__config.get_base_api_http_url,
             )
-            # Hit PowerBi ReportServer
-            LOGGER.info("Request to Report URL={}".format(report_get_endpoint))
-            response = requests.get(
-                url=report_get_endpoint,
-                auth=self.get_auth_credentials(),
-                verify=False,
+            report_get_endpoint_https = report_get_endpoint.format(
+                PBIRS_BASE_URL=self.__config.get_base_api_https_url,
             )
-
-            # Check if we got response from PowerBi Report Server
-            if response.status_code != 200:
-                message: str = "Failed to fetch Report from power-bi-report-server for"
-                LOGGER.warning(message)
-                LOGGER.warning("{}={}".format(Constant.ReportId, report_type))
-                raise ValueError(message)
-
-            response_dict = response.json()["value"]
+            response_dict = self.requests_get(
+                url_http=report_get_endpoint_http,
+                url_https=report_get_endpoint_https,
+                content_type=report_type
+            )["value"]
             if response_dict:
                 reports.extend(
                     report_types_mapping[report_type].parse_obj(report)
@@ -678,7 +679,7 @@ class PowerBiReportServerDashboardSource(Source):
         super().__init__(ctx)
         self.source_config = config
         self.report = PowerBiReportServerDashboardSourceReport()
-        self.auth = PowerBiReportServerAPI(self.source_config).get_auth_credentials()
+        self.auth = PowerBiReportServerAPI(self.source_config).get_auth_credentials
         self.powerbi_client = PowerBiReportServerAPI(self.source_config)
         self.mapper = Mapper(config)
         self.user_dao = UserDao(config)
