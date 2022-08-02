@@ -9,7 +9,6 @@ from typing import Any, Dict, Iterable, List, Optional, Set
 
 import datahub.emitter.mce_builder as builder
 import requests
-from requests.exceptions import ConnectionError
 from datahub.configuration.common import AllowDenyPattern
 from datahub.configuration.source_common import EnvBasedSourceConfigBase
 from datahub.emitter.mcp import MetadataChangeProposalWrapper
@@ -40,17 +39,12 @@ from datahub.metadata.schema_classes import (
 from orderedset import OrderedSet
 from pydantic import ValidationError
 from pydantic.fields import Field
+from requests.exceptions import ConnectionError
 from requests_ntlm import HttpNtlmAuth
 
 from .constants import API_ENDPOINTS, Constant
 from .graphql_domain import CorpUser
-from .report_server_domain import (
-    LinkedReport,
-    MobileReport,
-    PowerBiReport,
-    Report,
-    SystemPolicies,
-)
+from .report_server_domain import LinkedReport, MobileReport, PowerBiReport, Report
 
 LOGGER = logging.getLogger(__name__)
 
@@ -165,7 +159,7 @@ class PowerBiReportServerAPI:
         response_dict = self.requests_get(
             url_http=report_get_endpoint_http,
             url_https=report_get_endpoint_https,
-            content_type=Constant.REPORT
+            content_type=Constant.REPORT,
         )
 
         return Report.parse_obj(response_dict)
@@ -193,7 +187,7 @@ class PowerBiReportServerAPI:
         response_dict = self.requests_get(
             url_http=powerbi_report_get_endpoint_http,
             url_https=powerbi_report_get_endpoint_https,
-            content_type=Constant.POWERBI_REPORT
+            content_type=Constant.POWERBI_REPORT,
         )
         return PowerBiReport.parse_obj(response_dict)
 
@@ -220,7 +214,7 @@ class PowerBiReportServerAPI:
         response_dict = self.requests_get(
             url_http=linked_report_get_endpoint_http,
             url_https=linked_report_get_endpoint_https,
-            content_type=Constant.LINKED_REPORT
+            content_type=Constant.LINKED_REPORT,
         )
 
         return LinkedReport.parse_obj(response_dict)
@@ -248,7 +242,7 @@ class PowerBiReportServerAPI:
         response_dict = self.requests_get(
             url_http=mobile_report_get_endpoint_http,
             url_https=mobile_report_get_endpoint_https,
-            content_type=Constant.MOBILE_REPORT
+            content_type=Constant.MOBILE_REPORT,
         )
 
         return MobileReport.parse_obj(response_dict)
@@ -277,7 +271,7 @@ class PowerBiReportServerAPI:
             response_dict = self.requests_get(
                 url_http=report_get_endpoint_http,
                 url_https=report_get_endpoint_https,
-                content_type=report_type
+                content_type=report_type,
             )["value"]
             if response_dict:
                 reports.extend(
@@ -505,7 +499,14 @@ class Mapper:
 
         # Dashboard browsePaths
         browse_path = BrowsePathsClass(
-            paths=[report.get_browse_path("powerbi_report_server", self.__config.host)]
+            paths=[
+                report.get_browse_path(
+                    "powerbi_report_server",
+                    self.__config.host,
+                    self.__config.env,
+                    self.__config.report_virtual_directory_name,
+                )
+            ]
         )
         browse_path_mcp = self.new_mcp(
             entity_type=Constant.DASHBOARD,
