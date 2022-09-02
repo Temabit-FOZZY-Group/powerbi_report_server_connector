@@ -1,6 +1,7 @@
 from datetime import datetime
 from typing import List, Optional
 
+from datahub.metadata.schema_classes import OwnerClass
 from pydantic import BaseModel, Field
 
 from powerbireportserver.constants import RelationshipDirection
@@ -84,6 +85,28 @@ class CorpUser(BaseModel):
 
     def __hash__(self):
         return hash(self.__members())
+
+
+class Owner(BaseModel):
+    owner: str
+    type: str
+
+    def __members(self):
+        return self.owner, self.type
+
+    def __eq__(self, instance):
+        return isinstance(instance, Owner) and self.__members() == instance.__members()
+
+    def __hash__(self):
+        return hash(self.__members())
+
+
+class OwnershipData(BaseModel):
+    existing_owners: Optional[List[OwnerClass]] = []
+    owner_to_add: Optional[CorpUser]
+
+    class Config:
+        arbitrary_types_allowed = True
 
 
 CorpUserProperties.update_forward_refs()

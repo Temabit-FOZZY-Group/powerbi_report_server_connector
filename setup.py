@@ -4,7 +4,7 @@ from setuptools import find_packages, setup
 
 plugins: Dict[str, Set[str]] = {
     "powerbireportserver": {
-        "acryl-datahub==0.8.40",
+        "acryl-datahub==0.8.41",
         "orderedset",
         "pydantic",
         "requests",
@@ -14,7 +14,7 @@ plugins: Dict[str, Set[str]] = {
 
 setup_output = setup(
     name="powerbi_report_server",
-    version="0.0.4",
+    version="0.0.5",
     description="Ingest PowerBi Report Server metadata to DataHub",
     package_dir={"": "src"},
     packages=find_packages("src"),
