@@ -527,7 +527,6 @@ class Mapper:
     def to_datahub_work_units(self, report: Report) -> Set[EquableMetadataWorkUnit]:
         mcps = []
         user_mcps = []
-
         LOGGER.info("Converting Dashboard={} to DataHub Dashboard".format(report.name))
         # Convert user to CorpUser
         if user_info := report.user_info.owner_to_add:
@@ -639,6 +638,10 @@ class PowerBiReportServerDashboardSource(Source):
 
     def get_user_info(self, report: Any) -> OwnershipData:
         existing_ownership: List[OwnerClass] = []
+        if not self.source_config.extract_ownership:
+            return OwnershipData(
+            existing_owners=[], owner_to_add=None
+        )
         dashboard_urn = builder.make_dashboard_urn(
             self.source_config.platform_name, report.get_urn_part()
         )
